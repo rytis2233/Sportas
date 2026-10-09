@@ -20,8 +20,9 @@
 | Bildukas.lt | PVC | 1100 € |
 | Bildukas.lt | Aliuminis | 1400 € |
 | Skelbiu.lt (ukrainietiškos durys) | Stiklinės lauko | 410 € (95 × 205 cm) |
+| Skelbiu.lt (lauko durys, Klaipėda) | Lauko, riešuto spalvos | 400 € (95 × 205 cm) |
 
-Pastaba: 95 × 205 cm durys mažesnės už planuotą 100 × 215 cm angą. Jei tai rėmo matmuo, reikėtų užpildyti apie 5 cm pločio ir 10 cm aukščio.
+Pastaba: abiejų Skelbiu.lt pasiūlymų 95 × 205 cm durys mažesnės už planuotą 100 × 215 cm angą. Jei tai rėmo matmuo, reikėtų užpildyti apie 5 cm pločio ir 10 cm aukščio.
 
 ## 3. Vidinės durys
 - 100 × 200 cm (dar nepatikslinta: varčia ar sienos anga)
