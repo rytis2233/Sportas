@@ -3,7 +3,7 @@
 ## 1. Dvivėrės durys
 - Plotis 180 cm, aukštis 200 cm
 - Varčios: 2 × 90 cm (arba asimetriškos 60 + 120 cm)
-- Stakta: ~186–188 × 203–204 cm
+- Stakta: ~188 × 204 cm
 - Sienos anga: ~188–192 × 205–210 cm
 - Švarus praėjimas: ~170–174 cm
 
@@ -36,14 +36,18 @@ Pastaba: abiejų Skelbiu.lt pasiūlymų 95 × 205 cm durys mažesnės už planuo
 ## 4. Pasirinktas dizainas: dvivėrės durys su medine saule
 Brėžinys: `durys-brezinys.png`
 
-- Durys 180 × 200 cm (su 4 cm stakta: 186 × 204 cm)
+- Durys 180 × 200 cm (su 4 cm stakta: 188 × 204 cm)
+- Sienos anga: ~192 × 206 cm (1,5–2 cm tarpas montavimui); slenkstis ~2 cm, jei bus, prideda aukščio
 - 2 varčios po 90 cm
 - Rėmas: šonai 8 cm, viršus 8 cm, apačia 18 cm
 - Stiklas kiekvienoje varčioje: 74 × 174 cm
 - Saulė per vidurį, centras 105 cm nuo grindų (stiklo vidurys)
-- Saulės diskas Ø 44 cm, 2 puselės, tvirtinamas varžtais per stiklą; diskas = rankena
+- Saulės diskas Ø 44 cm, 2 puselės po 22 cm (8 cm ant varčios rėmo + 14 cm ant stiklo); diskas = rankena
+- Diskas tvirtinamas varžtais per varčios rėmą (vidaus ir lauko puselės suveržiamos kiaurai), ne per stiklo paketą
+- Tarpas tarp puselių ~5 mm, kraštai prie sandūros suapvalinti, kad varstant nesikabintų
 - Diskas išgaubtas, išsikiša 6 cm nuo stiklo iš abiejų durų pusių (vidus ir lauke); už jo krašto suimama kaip už rankenos, įdubų nėra
 - Ilgi spinduliai: 77 cm nuo centro, pagrindas ~9 cm, 5 vnt. ant varčios
 - Trumpi spinduliai: 50 cm nuo centro, pagrindas ~6 cm, 6 vnt. ant varčios
+- Ilgas spindulys iki rėmo ~5 cm; viršutinis spindulys 171 cm, apatinis 39 cm nuo grindų
 - Spinduliai klijuojami ant stiklo (UV klijai / struktūrinis silikonas)
 - Metalinių rankenų nėra; uždarytas laiko magnetinis / rutulinis fiksatorius, rakinti atskiru užraktu
