@@ -45,7 +45,7 @@ Brėžinyje 180 × 200 buvo varčių dydis. Kadangi tai yra anga, viskas mažėj
 - Saulės centras (stiklo viduryje): ~102–103 cm nuo grindų
 - Prieš užsakant išmatuoti angą 3 vietose (plotį viršuje, viduryje, apačioje; aukštį kairėje, viduryje, dešinėje) ir imti mažiausią
 
-## 4. Pasirinktas dizainas: dvivėrės durys su medine saule
+## 4. Pirminis dizainas (PASENĘS – žr. 5 skyrių)
 Brėžinys: `durys-brezinys.png`
 
 - Durys 180 × 200 cm (su 4 cm stakta: 188 × 204 cm)
@@ -63,3 +63,26 @@ Brėžinys: `durys-brezinys.png`
 - Ilgas spindulys iki rėmo ~5 cm; viršutinis spindulys 171 cm, apatinis 39 cm nuo grindų
 - Spinduliai klijuojami ant stiklo (UV klijai / struktūrinis silikonas)
 - Metalinių rankenų nėra; uždarytas laiko magnetinis / rutulinis fiksatorius, rakinti atskiru užraktu
+
+## 5. Galutinis projektas po tyrimo (anga 180 × 200 cm)
+Brėžinys: `durys-brezinys.png`. Ataskaita: `reports/Medinės dvivėrės lauko durys.md`.
+
+| Elementas | Matmuo |
+|---|---|
+| Sienos anga | 180 × 200 cm |
+| Montavimo tarpas | 1,5 cm šonuose ir viršuje |
+| Stakta (išorė) | 177 × 198,5 cm, profilis 6,8 cm, gylis 7,8 cm (IV78) |
+| Slenkstis | šiltas, ≤ 2 cm |
+| Varčios | 2 × 83,6 × 190,5 cm |
+| Rėmas | vyrių pusė 9, sandūra 10,5, viršus 9, apačia 18 cm |
+| Matomas stiklas | 64,1 × 163,5 cm; paketas ~66,5 × 166 cm, trigubas, Ug ≤ 0,6, išorinis laminuotas iš grūdinto |
+| Saulės diskas | Ø 40 cm, centras 102 cm nuo grindų, išsikiša 6 cm iš abiejų pusių |
+| Tarpas tarp disko puselių | 1,5 cm (varstant užsuka 11–13 mm) |
+| Disko tvirtinimas | 3 × M8 A4 kiaurai per statramstį, 5 cm nuo krašto (~90/102/114 cm) |
+| Spinduliai | ilgi 77 cm (±30°, vertikalūs ant statramsčių), trumpi 50 cm (0°, ±60°; 60° nuo 26 cm), maži 35 cm (±15°, ±45°), plotis ≤ 2,5 cm |
+| Rakto cilindras | ~75 cm (≤ 79 cm) aktyviojoje varčioje |
+| Vyriai | 3 vienai varčiai, 3D ritininiai, ≥ 160 kg poros apkrova |
+| Varčios svoris | ~80–90 kg (ąžuolas) |
+| Praėjimas | abi varčios ~150 cm, viena ~75 cm; aukštis ~189,7 cm |
+| Spyna | automatinė daugiataškė (geriausia motorinė), pasyviojoje varčioje automatinės sklendės |
+| Kaina (įvertis) | ~2 500–5 500 € + montavimas 80–400 € |
