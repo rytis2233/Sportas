@@ -32,3 +32,18 @@ Pastaba: abiejų Skelbiu.lt pasiūlymų 95 × 205 cm durys mažesnės už planuo
   - Vyriai: dvipusiai spyruokliniai / grindų spyruoklė / pivot
   - Stakta be užlaidos, šonuose 3–5 mm tarpai, įprasto užrakto nėra
   - Grindų spyruoklės nišą reikia išpjauti prieš klojant grindų dangą
+
+## 4. Pasirinktas dizainas: dvivėrės durys su medine saule
+Brėžinys: `durys-brezinys.png`
+
+- Durys 180 × 200 cm (su 4 cm stakta: 186 × 204 cm)
+- 2 varčios po 90 cm
+- Rėmas: šonai 8 cm, viršus 8 cm, apačia 18 cm
+- Stiklas kiekvienoje varčioje: 74 × 174 cm
+- Saulė per vidurį, centras 105 cm nuo grindų (stiklo vidurys)
+- Saulės diskas Ø 44 cm, 2 puselės, tvirtinamas varžtais per stiklą; diskas = rankena
+- Įduba pirštams kiekvienoje puselėje: 3 × 20 cm, 1–1,5 cm gylio
+- Ilgi spinduliai: 77 cm nuo centro, pagrindas ~9 cm, 5 vnt. ant varčios
+- Trumpi spinduliai: 50 cm nuo centro, pagrindas ~6 cm, 6 vnt. ant varčios
+- Spinduliai klijuojami ant stiklo (UV klijai / struktūrinis silikonas)
+- Metalinių rankenų nėra; uždarytas laiko magnetinis / rutulinis fiksatorius, rakinti atskiru užraktu
