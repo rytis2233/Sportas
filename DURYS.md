@@ -86,3 +86,13 @@ Brėžinys: `durys-brezinys.png`. Ataskaita: `reports/Medinės dvivėrės lauko 
 | Praėjimas | abi varčios ~150 cm, viena ~75 cm; aukštis ~189,7 cm |
 | Spyna | automatinė daugiataškė (geriausia motorinė), pasyviojoje varčioje automatinės sklendės |
 | Kaina (įvertis) | ~2 500–5 500 € + montavimas 80–400 € |
+
+## 6. Rėmo gamyba pačiam (atmintinė)
+- Varčia ~75–90 kg (stiklas ~45–55 kg). Atlaikys, jei tvirti kampai ir stiklas teisingai įstatytas su klotais.
+- Mediena: 3 sluoksnių klijuotas langų tašas (pušis / maumedis / ąžuolas), drėgnis 12–14 %, ne masyvi lenta
+- Pjūviai (storis 78 mm): vyrių statramstis 78×90, sandūros 78×105, viršus 78×90, apačia 78×180 mm
+- Kampai: dygis–lizdas (dygis ~26 mm = 1/3 storio), apačioje dvigubas dygis, lauko klijai D4 / PU + 2 mediniai kaiščiai; jokių kampų „ant ūso“ ar tik varžtais
+- Stiklo įlaida: gylis ~20 mm, stiklas užeina ≥ 13 mm; paketą užsakyti tik pagaminus rėmą (išmatuoti įlaidą)
+- Klotai: atraminiai apačioje vyrių pusėje ir viršuje spynos pusėje (įstrižai), 5–10 cm nuo kampų
+- Prieš stiklą: įstrižainės vienodos ±1 mm; po stiklo: patikrinti, ar spynos kampas nenusileidžia
+- Vyriai: 3 ritininiai 3D, ≥ 160 kg poros apkrova; varžtai į kietą medieną
