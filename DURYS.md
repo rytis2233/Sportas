@@ -79,8 +79,8 @@ Brėžinys: `durys-brezinys.png`. Ataskaita: `reports/Medinės dvivėrės lauko 
 | Saulės diskas | Ø 40 cm, centras 102 cm nuo grindų, išsikiša 6 cm iš abiejų pusių |
 | Tarpas tarp disko puselių | 1,5 cm (varstant užsuka 11–13 mm) |
 | Disko tvirtinimas | 3 × M8 A4 kiaurai per statramstį, 5 cm nuo krašto (~90/102/114 cm) |
-| Spinduliai | ilgi 77 cm (±30°, vertikalūs ant statramsčių), trumpi 50 cm (0°, ±60°; 60° nuo 26 cm), maži 35 cm (±15°, ±45°), plotis ≤ 2,5 cm |
-| Rakto cilindras | ~75 cm (≤ 79 cm) aktyviojoje varčioje |
+| Spinduliai | 22 vnt., kas 15° (be vertikalių), kaip pirmame piešinyje: ilgi 70 cm nuo centro, pagrindas 9 cm (0°, ±30°, ±60°); trumpi 46 cm, pagrindas 6 cm (±15°, ±45°, ±75°); prie sandūros eina ir per medinį statramstį, perskirti per vidurį; iki stiklo krašto ≥ 4,6 cm. Platūs spinduliai didina stiklo įtrūkimo nuo karščio riziką – išorinis stiklas grūdintas, spinduliai šviesūs, klijus patvirtina stiklo gamintojas |
+| Rakto cilindras | ~150 cm (virš saulės, kad neužstotų spinduliai) aktyviojoje varčioje, arba motorinė spyna be cilindro |
 | Vyriai | 3 vienai varčiai, 3D ritininiai, ≥ 160 kg poros apkrova |
 | Varčios svoris | ~80–90 kg (ąžuolas) |
 | Praėjimas | abi varčios ~150 cm, viena ~75 cm; aukštis ~189,7 cm |
