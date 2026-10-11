@@ -42,7 +42,7 @@ Brėžinys: `durys-brezinys.png`
 - Stiklas kiekvienoje varčioje: 74 × 174 cm
 - Saulė per vidurį, centras 105 cm nuo grindų (stiklo vidurys)
 - Saulės diskas Ø 44 cm, 2 puselės, tvirtinamas varžtais per stiklą; diskas = rankena
-- Įduba pirštams kiekvienoje puselėje: 3 × 20 cm, 1–1,5 cm gylio
+- Diskas išgaubtas, išsikiša 6 cm nuo stiklo iš abiejų durų pusių (vidus ir lauke); už jo krašto suimama kaip už rankenos, įdubų nėra
 - Ilgi spinduliai: 77 cm nuo centro, pagrindas ~9 cm, 5 vnt. ant varčios
 - Trumpi spinduliai: 50 cm nuo centro, pagrindas ~6 cm, 6 vnt. ant varčios
 - Spinduliai klijuojami ant stiklo (UV klijai / struktūrinis silikonas)
