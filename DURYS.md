@@ -33,6 +33,18 @@ Pastaba: abiejų Skelbiu.lt pasiūlymų 95 × 205 cm durys mažesnės už planuo
   - Stakta be užlaidos, šonuose 3–5 mm tarpai, įprasto užrakto nėra
   - Grindų spyruoklės nišą reikia išpjauti prieš klojant grindų dangą
 
+
+### SVARBU: turima sienos anga yra 180 × 200 cm (be staktos)
+Brėžinyje 180 × 200 buvo varčių dydis. Kadangi tai yra anga, viskas mažėja (apytiksliai, tikslinti su meistru):
+- Montavimo tarpas 1,5 cm šonuose ir viršuje → stakta (išorė) ~177 × 198,5 cm
+- Stakta ~6 cm pločio, slenkstis ~2 cm → šviesa staktoje ~165 × 190 cm
+- Varčios: 2 × ~83 cm, aukštis ~191 cm
+- Praėjimas atidarius abi varčias: ~160 × 190 cm
+- Stiklas, jei rėmas 8 cm (apačia 18): ~67 × 165 cm
+- Stiklas, jei rėmas 11 cm (apačia 20): ~61 × 160 cm
+- Saulės centras (stiklo viduryje): ~102–103 cm nuo grindų
+- Prieš užsakant išmatuoti angą 3 vietose (plotį viršuje, viduryje, apačioje; aukštį kairėje, viduryje, dešinėje) ir imti mažiausią
+
 ## 4. Pasirinktas dizainas: dvivėrės durys su medine saule
 Brėžinys: `durys-brezinys.png`
 
