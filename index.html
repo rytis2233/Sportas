@@ -153,6 +153,12 @@ h2 { font-family: var(--display); font-weight: 600; font-size: 21px; text-transf
 .add:active { filter: brightness(.92); }
 a.add { display: block; text-align: center; text-decoration: none; }
 .io { width: 100%; border: 1px solid var(--line); border-radius: 9px; background: var(--bg); padding: 8px; font: 12px/1.4 ui-monospace, Menlo, monospace; color: var(--ink); resize: vertical; }
+.tgt-row { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; margin-top: -4px; }
+.tgt-row .link { padding-left: 0; color: var(--accent); }
+.tgt-edit { display: flex; flex-direction: column; gap: 10px; padding: 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+.tg-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.tg-in { width: 100%; min-width: 0; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); padding: 8px 4px; text-align: center; font-family: var(--display); font-size: 22px; font-weight: 600; }
+.tgt-edit .field label { font-size: 10px; }
 .steps { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; font-size: 14px; }
 .steps b { font-weight: 600; }
 .add:disabled { opacity: .5; }
@@ -350,12 +356,14 @@ select.picker { width: 100%; border: 1px solid var(--line); background: var(--su
   const s = (ex, sets, lo, hi, rest) => ({ ex, sets, lo, hi, rest });
   const WORKOUTS = [
     { id: "pull",  name: "Pull",  dow: 1, items: [s("pullups", 5, 3, 3, 180), s("row", 4, 5, 5, 180), s("curl", 3, 5, 6, 120), s("face", 2, 10, 12, 75)] },
-    { id: "legs",  name: "Legs",  dow: 2, items: [s("squat", 5, 3, 3, 210), s("rdl", 3, 5, 5, 180), s("bss", 3, 6, 6, 120), s("calf", 3, 8, 10, 90)] },
+    { id: "legs",  name: "Legs",  dow: 2, items: [s("squat", 4, 5, 5, 210), s("rdl", 3, 5, 5, 180), s("bss", 3, 6, 6, 120), s("calf", 3, 8, 10, 90)] },
     { id: "push",  name: "Push",  dow: 3, items: [s("bench", 5, 3, 3, 210), s("ohp", 3, 5, 5, 180), s("dips", 3, 5, 6, 120), s("lat", 3, 10, 15, 60), s("tri", 2, 8, 8, 90)] },
     { id: "upper", name: "Upper", dow: 5, items: [s("ohp", 4, 4, 5, 180), s("chin", 4, 4, 6, 180), s("incline", 3, 5, 5, 150), s("dbrow", 3, 5, 6, 120), s("face", 2, 10, 12, 75), s("lat", 3, 10, 15, 60)] },
     { id: "lower", name: "Lower", dow: 6, items: [s("deadlift", 3, 3, 3, 240), s("psquat", 3, 4, 4, 180), s("lcurl", 3, 6, 8, 90), s("calf", 3, 8, 10, 90), s("abw", 3, 8, 10, 90)] },
   ];
   const WMAP = Object.fromEntries(WORKOUTS.map(w => [w.id, w]));
+  const tgtKey = (wid, ex) => `${wid}:${ex}`;
+  const itemsOf = wid => WMAP[wid].items.map(i => Object.assign({}, i, ((state.settings.targets || {})[tgtKey(wid, i.ex)]) || {}));
   const DOW_SHORT = ["Sk", "Pr", "An", "Tr", "Kt", "Pn", "Št"];
   const DOW_LONG = ["sekmadienis", "pirmadienis", "antradienis", "trečiadienis", "ketvirtadienis", "penktadienis", "šeštadienis"];
   const MONTHS = ["sausio", "vasario", "kovo", "balandžio", "gegužės", "birželio", "liepos", "rugpjūčio", "rugsėjo", "spalio", "lapkričio", "gruodžio"];
@@ -408,6 +416,8 @@ select.picker { width: 100%; border: 1px solid var(--line); background: var(--su
     editDay: null,
     histLimit: 15,
     io: null,
+    editTarget: null,
+    tgtErr: "",
     ioMsg: "",
   };
   if (!["train", "prog", "hist"].includes(state.view)) state.view = "train";
@@ -577,9 +587,9 @@ select.picker { width: 100%; border: 1px solid var(--line); background: var(--su
 
   /* ---------- actions ---------- */
   function addSet(exId, defer) {
-    const w = WMAP[state.w];
-    const idx = w.items.findIndex(i => i.ex === exId);
-    const it = w.items[idx], e = EXD[exId];
+    const items = itemsOf(state.w);
+    const idx = items.findIndex(i => i.ex === exId);
+    const it = items[idx], e = EXD[exId];
     const d = draftFor(it);
     const kg = e.noKg ? 0 : parseNum(d.kg), reps = Math.round(parseNum(d.reps));
     if (!(kg >= 0) || !(reps > 0)) { const el = $(`${kg >= 0 ? "reps" : "kg"}-${exId}`); if (el) el.focus(); return false; }
@@ -596,7 +606,7 @@ select.picker { width: 100%; border: 1px solid var(--line); background: var(--su
     const done = setsFor(key, exId).length;
     let label = `Poilsis · ${e.name}`;
     if (done >= targetSets(it)) {
-      const next = w.items.slice(idx + 1).find(i => setsFor(key, i.ex).length < targetSets(i)) || w.items.find(i => setsFor(key, i.ex).length < targetSets(i));
+      const next = items.slice(idx + 1).find(i => setsFor(key, i.ex).length < targetSets(i)) || items.find(i => setsFor(key, i.ex).length < targetSets(i));
       if (next) { state.open = next.ex; label = `Toliau: ${EXD[next.ex].name}`; }
       else { state.open = null; label = "Treniruotė baigta"; }
     }
@@ -678,6 +688,7 @@ select.picker { width: 100%; border: 1px solid var(--line); background: var(--su
       if (!state.settings.cycleStart && st.cycleStart) state.settings.cycleStart = st.cycleStart;
       if (st.deloadFrom && !state.settings.deloadFrom) { state.settings.deloadFrom = st.deloadFrom; state.settings.deloadTo = st.deloadTo; }
       if (st.bar && !state.settings.bar) state.settings.bar = st.bar;
+      if (st.targets && typeof st.targets === "object") state.settings.targets = Object.assign({}, st.targets, state.settings.targets);
       persistSettings();
     }
     state.io = null;
@@ -699,7 +710,7 @@ select.picker { width: 100%; border: 1px solid var(--line); background: var(--su
     $("w-title").textContent = state.view === "train" ? WMAP[state.w].name : state.view === "prog" ? "Progresas" : "Istorija";
     $("days").hidden = state.view !== "train";
     $("days").innerHTML = WORKOUTS.map(w => {
-      const done = w.items.every(i => setsFor(tk, i.ex).length >= targetSets(i));
+      const done = itemsOf(w.id).every(i => setsFor(tk, i.ex).length >= targetSets(i));
       return `<button type="button" data-action="pick" data-w="${w.id}" aria-pressed="${w.id === state.w}" data-today="${todayW && todayW.id === w.id ? 1 : 0}" data-done="${done ? 1 : 0}"><b>${w.name}</b><small>${DOW_SHORT[w.dow]}</small></button>`;
     }).join("");
 
@@ -744,9 +755,10 @@ select.picker { width: 100%; border: 1px solid var(--line); background: var(--su
     } else if (todayW && state.w !== todayW.id && !(state.days[tk] && state.days[tk].w === state.w)) {
       top = `<div class="hint">Pagal planą šiandien ${todayW.name}. Rodoma ${w.name}.</div>`;
     }
-    const total = w.items.reduce((a, i) => a + targetSets(i), 0);
-    const done = w.items.reduce((a, i) => a + Math.min(setsFor(tk, i.ex).length, targetSets(i)), 0);
-    const list = w.items.map((it, i) => exHtml(it, i, tk, ready)).join("");
+    const items = itemsOf(w.id);
+    const total = items.reduce((a, i) => a + targetSets(i), 0);
+    const done = items.reduce((a, i) => a + Math.min(setsFor(tk, i.ex).length, targetSets(i)), 0);
+    const list = items.map((it, i) => exHtml(it, i, tk, ready)).join("");
     return `${top}${cycleHtml()}
       <div class="prog"><span class="track"><i style="width:${total ? (100 * done) / total : 0}%"></i></span><span><b>${done}</b> / ${total} priėjimų</span></div>
       <section aria-label="Pratimai"><ol class="exlist">${list}</ol></section>
@@ -776,6 +788,7 @@ select.picker { width: 100%; border: 1px solid var(--line); background: var(--su
       body = `
         <div class="logger">
           <div class="advice" data-t="${a.t}">${a.text}${a.last ? `<span class="last">${a.last}</span>` : ""}</div>
+          ${tgtEditHtml(it)}
           <div class="inputs${e.noKg ? " one" : ""}">${kgField}
             <div class="field">
               <label for="reps-${it.ex}">Pakartojimai${perTxt}</label>
@@ -804,10 +817,50 @@ select.picker { width: 100%; border: 1px solid var(--line); background: var(--su
       </li>`;
   }
 
+  function tgtEditHtml(it) {
+    const key = tgtKey(state.w, it.ex);
+    const custom = !!(state.settings.targets && state.settings.targets[key]);
+    if (state.editTarget !== it.ex) {
+      return `<div class="tgt-row"><button type="button" class="link" data-action="tgt-open" data-ex="${it.ex}">Keisti priėjimus ir pakartojimus</button>${custom ? `<span class="hint">· pakeista tau</span>` : ""}</div>`;
+    }
+    const f = (id, label, v) => `<div class="field"><label for="${id}">${label}</label><input class="tg-in" id="${id}" data-ex="${it.ex}" data-f="${id}" inputmode="numeric" autocomplete="off" value="${v}"></div>`;
+    return `<div class="tgt-edit">
+      <div class="tg-grid">${f("tg-sets", "Priėjimai", it.sets)}${f("tg-lo", "Pak. nuo", it.lo)}${f("tg-hi", "Pak. iki", it.hi)}${f("tg-rest", "Poilsis, s", it.rest)}</div>
+      ${state.tgtErr ? `<span class="hint" style="color:var(--danger)">${state.tgtErr}</span>` : ""}
+      <span class="hint">Galioja tik ${WMAP[state.w].name} dienai. Jei pakartojimų skaičius vienas, abiejuose laukeliuose įrašyk tą patį.</span>
+      <div class="btns" style="display:flex;gap:8px;flex-wrap:wrap">
+        <button type="button" class="btn primary" data-action="tgt-save" data-ex="${it.ex}">Išsaugoti</button>
+        ${custom ? `<button type="button" class="btn" data-action="tgt-reset" data-ex="${it.ex}">Grąžinti pradinį</button>` : ""}
+        <button type="button" class="btn" data-action="tgt-cancel">Atšaukti</button>
+      </div>
+    </div>`;
+  }
+  function saveTarget(ex) {
+    const n = id => Math.round(parseNum(($(id) || {}).value));
+    const sets = n("tg-sets"), lo = n("tg-lo"), hiRaw = n("tg-hi"), rest = n("tg-rest");
+    const hi = isNaN(hiRaw) ? lo : hiRaw;
+    if (!(sets >= 1 && sets <= 12) || !(lo >= 1 && lo <= 50) || !(hi >= lo && hi <= 50) || !(rest >= 15 && rest <= 900)) {
+      state.tgtErr = "Patikrink skaičius: priėjimai 1–12, pakartojimai 1–50 („iki“ ne mažiau nei „nuo“), poilsis 15–900 s.";
+      render(); return;
+    }
+    state.settings.targets = Object.assign({}, state.settings.targets, { [tgtKey(state.w, ex)]: { sets, lo, hi, rest } });
+    persistSettings();
+    delete state.draft[`${state.w}:${ex}`];
+    state.editTarget = null; state.tgtErr = "";
+    render();
+  }
+  function resetTarget(ex) {
+    const t = Object.assign({}, state.settings.targets); delete t[tgtKey(state.w, ex)];
+    state.settings.targets = t; persistSettings();
+    delete state.draft[`${state.w}:${ex}`];
+    state.editTarget = null; state.tgtErr = "";
+    render();
+  }
+
   function addBtn(it, today, tgt, ready) {
     const label = today.length >= tgt ? "Pridėti papildomą priėjimą" : `Pridėti ${today.length + 1}-ą priėjimą`;
     const tk = todayKey();
-    const left = WMAP[state.w].items.reduce((a, i) => a + Math.max(0, targetSets(i) - setsFor(tk, i.ex).length), 0);
+    const left = itemsOf(state.w).reduce((a, i) => a + Math.max(0, targetSets(i) - setsFor(tk, i.ex).length), 0);
     const lastSet = today.length < tgt && left <= 1;
     if (IS_PWA && ready && state.settings.iosTimer !== false && !lastSet) {
       return `<a class="add" href="${shortcutHref(it.rest)}" data-action="add" data-ex="${it.ex}">${label}</a>`;
@@ -1067,11 +1120,11 @@ select.picker { width: 100%; border: 1px solid var(--line); background: var(--su
   document.addEventListener("click", ev => {
     const b = ev.target.closest("[data-action]"); if (!b) return;
     const a = b.dataset.action, ex = b.dataset.ex;
-    if (a === "toggle") { state.open = state.open === ex ? null : ex; render(); }
+    if (a === "toggle") { state.open = state.open === ex ? null : ex; state.editTarget = null; render(); }
     else if (a === "pick") { state.w = b.dataset.w; state.wPicked = true; state.open = null; render(); window.scrollTo({ top: 0 }); }
     else if (a === "view") { state.view = b.dataset.v; lsSet(LS_VIEW, state.view); render(); window.scrollTo({ top: 0 }); }
     else if (a === "step") {
-      const it = WMAP[state.w].items.find(i => i.ex === ex), e = EXD[ex], d = draftFor(it), f = b.dataset.f, dir = +b.dataset.d;
+      const it = itemsOf(state.w).find(i => i.ex === ex), e = EXD[ex], d = draftFor(it), f = b.dataset.f, dir = +b.dataset.d;
       const curV = parseNum(d[f]) || 0;
       const next = f === "kg" ? Math.max(0, +(curV + dir * e.step).toFixed(2)) : Math.max(1, Math.round(curV) + dir);
       d[f] = f === "kg" ? numStr(next) : String(next);
@@ -1082,6 +1135,10 @@ select.picker { width: 100%; border: 1px solid var(--line); background: var(--su
       if (b.tagName === "A") { if (!addSet(ex, true)) ev.preventDefault(); }
       else addSet(ex);
     }
+    else if (a === "tgt-open") { state.editTarget = ex; state.tgtErr = ""; render(); }
+    else if (a === "tgt-cancel") { state.editTarget = null; state.tgtErr = ""; render(); }
+    else if (a === "tgt-save") saveTarget(ex);
+    else if (a === "tgt-reset") resetTarget(ex);
     else if (a === "export") doExport();
     else if (a === "import-open") { state.io = state.io === "import" ? null : "import"; state.ioMsg = ""; render(); const t = $("io-text"); if (t) t.focus(); }
     else if (a === "import-do") doImport();
@@ -1107,13 +1164,14 @@ select.picker { width: 100%; border: 1px solid var(--line); background: var(--su
   });
   document.addEventListener("input", ev => {
     const el = ev.target; if (!el.dataset || !el.dataset.ex || !el.dataset.f) return;
-    const it = WMAP[state.w].items.find(i => i.ex === el.dataset.ex); if (!it) return;
+    if (el.dataset.f.startsWith("tg")) return;
+    const it = itemsOf(state.w).find(i => i.ex === el.dataset.ex); if (!it) return;
     draftFor(it)[el.dataset.f] = el.value;
     if (el.dataset.f === "kg" && EXD[it.ex].bar) { const p = $(`plates-${it.ex}`); if (p) p.innerHTML = platesHtml(parseNum(el.value)); }
   });
   document.addEventListener("keydown", ev => {
     const el = ev.target;
-    if (ev.key === "Enter" && el.dataset && el.dataset.ex && el.dataset.f) { ev.preventDefault(); el.blur(); addSet(el.dataset.ex); }
+    if (ev.key === "Enter" && el.dataset && el.dataset.ex && el.dataset.f) { ev.preventDefault(); el.blur(); if (el.dataset.f.startsWith("tg")) saveTarget(el.dataset.ex); else addSet(el.dataset.ex); }
   });
   document.addEventListener("focusin", ev => { if (ev.target.matches && ev.target.matches(".stepper input")) setTimeout(() => { try { ev.target.select(); } catch (e) {} }, 0); });
 
