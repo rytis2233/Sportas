@@ -121,6 +121,8 @@ h2 { font-family: var(--display); font-weight: 600; font-size: 21px; text-transf
 .ex-idx { font-family: var(--display); font-size: 28px; font-weight: 700; color: var(--muted); line-height: 1; }
 .ex[data-open="1"] .ex-idx { color: var(--accent); }
 .ex[data-done="1"] .ex-idx { color: var(--good); }
+.ex[data-skip="1"] .ex-name, .ex[data-skip="1"] .ex-idx { color: var(--muted); text-decoration: line-through; text-decoration-thickness: 1px; }
+.ex[data-skip="1"] .pill { background: var(--line); color: var(--muted); }
 .ex-name { font-weight: 600; font-size: 16px; display: block; }
 .ex-meta { font-size: 13px; color: var(--muted); display: block; }
 .ex-meta .tgt { font-family: var(--display); font-size: 15px; font-weight: 600; color: var(--ink); letter-spacing: .02em; }
@@ -485,6 +487,8 @@ select.picker { width: 100%; border: 1px solid var(--line); background: var(--su
     return Math.max(1, Math.floor(diffDays(c, todayKey()) / 7) + 1);
   }
   const targetSets = it => (deloadActive() ? Math.ceil(it.sets / 2) : it.sets);
+  const isSkipped = (k, ex) => !!(state.days[k] && Array.isArray(state.days[k].skip) && state.days[k].skip.includes(ex));
+  const tgtFor = (it, k = todayKey()) => (isSkipped(k, it.ex) ? 0 : targetSets(it));
 
   function advice(it) {
     const e = EXD[it.ex];
@@ -594,7 +598,7 @@ select.picker { width: 100%; border: 1px solid var(--line); background: var(--su
     const body = state.days[key];
     if (state.mode === "db" && col) {
       const ref = col.doc(key);
-      const copy = body && body.sets.length ? JSON.parse(JSON.stringify(body)) : null;
+      const copy = body && (body.sets.length || (body.skip && body.skip.length)) ? JSON.parse(JSON.stringify(body)) : null;
       queue(() => (copy ? ref.set(copy) : ref.delete()));
     } else if (!lsSet(LS_DAYS, state.days)) setStatus("err", "Naršyklė neleidžia saugoti");
   }
@@ -624,7 +628,7 @@ select.picker { width: 100%; border: 1px solid var(--line); background: var(--su
     const done = setsFor(key, exId).length;
     let label = `Poilsis · ${rawName(exId)}`;
     if (done >= targetSets(it)) {
-      const next = items.slice(idx + 1).find(i => setsFor(key, i.ex).length < targetSets(i)) || items.find(i => setsFor(key, i.ex).length < targetSets(i));
+      const next = items.slice(idx + 1).find(i => setsFor(key, i.ex).length < tgtFor(i)) || items.find(i => setsFor(key, i.ex).length < tgtFor(i));
       if (next) { state.open = next.ex; label = `Toliau: ${rawName(next.ex)}`; }
       else { state.open = null; label = "Treniruotė baigta"; }
     }
@@ -632,11 +636,27 @@ select.picker { width: 100%; border: 1px solid var(--line); background: var(--su
     if (defer) setTimeout(render, 80); else render();
     return true;
   }
+  function setSkip(exId, on) {
+    const key = todayKey();
+    const old = state.days[key] || { date: key, w: state.w, deload: deloadActive(), sets: [] };
+    const skip = new Set(old.skip || []);
+    if (on) skip.add(exId); else skip.delete(exId);
+    state.days[key] = Object.assign({}, old, { w: old.w || state.w, skip: [...skip] });
+    if (!state.days[key].sets.length && !skip.size) delete state.days[key];
+    persistDay(key);
+    if (on) {
+      const items = itemsOf(state.w);
+      const idx = items.findIndex(i => i.ex === exId);
+      const next = items.slice(idx + 1).find(i => setsFor(key, i.ex).length < tgtFor(i)) || items.find(i => setsFor(key, i.ex).length < tgtFor(i));
+      state.open = next ? next.ex : null;
+    } else state.open = exId;
+    render();
+  }
   function removeSet(key, t) {
     const old = state.days[key]; if (!old) return;
     state.days[key] = Object.assign({}, old, { sets: old.sets.filter(x => x.t !== t) });
     persistDay(key);
-    if (!state.days[key].sets.length) delete state.days[key];
+    if (!state.days[key].sets.length && !(state.days[key].skip && state.days[key].skip.length)) delete state.days[key];
     render();
   }
   function removeDay(key) {
@@ -730,7 +750,7 @@ select.picker { width: 100%; border: 1px solid var(--line); background: var(--su
     $("w-title").textContent = state.view === "train" ? WMAP[state.w].name : state.view === "prog" ? "Progresas" : "Istorija";
     $("days").hidden = state.view !== "train";
     $("days").innerHTML = WORKOUTS.map(w => {
-      const done = itemsOf(w.id).every(i => setsFor(tk, i.ex).length >= targetSets(i));
+      const done = itemsOf(w.id).every(i => setsFor(tk, i.ex).length >= tgtFor(i));
       return `<button type="button" data-action="pick" data-w="${w.id}" aria-pressed="${w.id === state.w}" data-today="${todayW && todayW.id === w.id ? 1 : 0}" data-done="${done ? 1 : 0}"><b>${w.name}</b><small>${DOW_SHORT[w.dow]}</small></button>`;
     }).join("");
 
@@ -776,8 +796,8 @@ select.picker { width: 100%; border: 1px solid var(--line); background: var(--su
       top = `<div class="hint">Pagal planą šiandien ${todayW.name}. Rodoma ${w.name}.</div>`;
     }
     const items = itemsOf(w.id);
-    const total = items.reduce((a, i) => a + targetSets(i), 0);
-    const done = items.reduce((a, i) => a + Math.min(setsFor(tk, i.ex).length, targetSets(i)), 0);
+    const total = items.reduce((a, i) => a + tgtFor(i), 0);
+    const done = items.reduce((a, i) => a + Math.min(setsFor(tk, i.ex).length, tgtFor(i)), 0);
     const list = items.map((it, i) => exHtml(it, i, tk, ready)).join("");
     return `${top}${cycleHtml()}
       <div class="prog"><span class="track"><i style="width:${total ? (100 * done) / total : 0}%"></i></span><span><b>${done}</b> / ${total} priėjimų</span></div>
@@ -787,6 +807,17 @@ select.picker { width: 100%; border: 1px solid var(--line); background: var(--su
 
   function exHtml(it, i, tk, ready) {
     const e = EXD[it.ex];
+    if (isSkipped(tk, it.ex)) {
+      const openS = state.open === it.ex;
+      return `
+      <li class="ex" data-skip="1" data-open="${openS ? 1 : 0}">
+        <button type="button" class="ex-row" data-action="toggle" data-ex="${it.ex}" aria-expanded="${openS}">
+          <span class="ex-idx">${i + 1}</span>
+          <span><span class="ex-name">${exName(it.ex)}</span><span class="ex-meta">Praleista šiandien</span></span>
+          <span class="pill">Praleista</span>
+        </button>${openS ? `<div class="logger"><div><button type="button" class="btn" data-action="unskip" data-ex="${it.ex}">Grąžinti pratimą</button></div></div>` : ""}
+      </li>`;
+    }
     const today = setsFor(tk, it.ex);
     const tgt = targetSets(it);
     const open = state.open === it.ex;
@@ -822,6 +853,7 @@ select.picker { width: 100%; border: 1px solid var(--line); background: var(--su
           ${e.added ? `<span class="hint">Tik papildomas svoris ant diržo, 0 = be svorio</span>` : e.note ? `<span class="hint">${e.note}</span>` : ""}
           ${e.bar ? `<div class="plates" id="plates-${it.ex}">${platesHtml(fromU(e, parseNum(d.kg)))}</div>` : ""}
           ${addBtn(it, today, tgt, ready)}
+          ${today.length ? "" : `<div><button type="button" class="link" data-action="skip" data-ex="${it.ex}">Praleisti šiandien</button></div>`}
           ${today.length ? `<div class="today">${today.map(x => `
             <span class="chip${x.reps < it.lo ? " miss" : ""}"><span class="num">${e.noKg ? `${x.reps} pak.` : `${fmt(U(e, x.kg))} × ${x.reps}`}</span>
               <button type="button" class="x" data-action="del-set" data-k="${tk}" data-t="${x.t}" aria-label="Ištrinti priėjimą">×</button></span>`).join("")}</div>` : ""}
@@ -890,7 +922,7 @@ select.picker { width: 100%; border: 1px solid var(--line); background: var(--su
   function addBtn(it, today, tgt, ready) {
     const label = today.length >= tgt ? "Pridėti papildomą priėjimą" : `Pridėti ${today.length + 1}-ą priėjimą`;
     const tk = todayKey();
-    const left = itemsOf(state.w).reduce((a, i) => a + Math.max(0, targetSets(i) - setsFor(tk, i.ex).length), 0);
+    const left = itemsOf(state.w).reduce((a, i) => a + Math.max(0, tgtFor(i) - setsFor(tk, i.ex).length), 0);
     const lastSet = today.length < tgt && left <= 1;
     if (IS_PWA && ready && state.settings.iosTimer !== false && !lastSet) {
       return `<a class="add" href="${shortcutHref(it.rest)}" data-action="add" data-ex="${it.ex}">${label}</a>`;
@@ -992,11 +1024,12 @@ select.picker { width: 100%; border: 1px solid var(--line); background: var(--su
         const wid = inferWorkout(doc);
         const editing = state.editDay === k;
         const exs = [...new Set(doc.sets.map(x => x.ex))].sort((a, b) => EX_ORDER.indexOf(a) - EX_ORDER.indexOf(b));
+        const skipped = (doc.skip || []).filter(x => !exs.includes(x));
         const rows = exs.map(ex => {
           const e = EXD[ex] || { name: ex };
           const st = setsFor(k, ex);
           return `<div class="day-row"><span>${exName(ex)}</span><span class="sets">${st.map(x => `<span>${e.noKg ? x.reps : `${fmt(U(e, x.kg))}×${x.reps}`}${editing ? `<button type="button" class="x" data-action="del-set" data-k="${k}" data-t="${x.t}" aria-label="Ištrinti">×</button>` : ""}</span>`).join("")}</span></div>`;
-        }).join("");
+        }).join("") + (skipped.length ? `<div class="day-row"><span class="hint">Praleista: ${skipped.map(exName).join(", ")}</span><span></span></div>` : "");
         const confirming = state.confirmDel === k;
         return `<li class="day">
           <div class="day-head"><span class="day-date">${longDate(k)}${wid ? `<span class="pill">${WMAP[wid].name}</span>` : ""}${doc.deload ? `<span class="pill dl">Deload</span>` : ""}</span>
@@ -1171,6 +1204,8 @@ select.picker { width: 100%; border: 1px solid var(--line); background: var(--su
     else if (a === "tgt-cancel") { state.editTarget = null; state.tgtErr = ""; render(); }
     else if (a === "tgt-save") saveTarget(ex);
     else if (a === "tgt-reset") resetTarget(ex);
+    else if (a === "skip") setSkip(ex, true);
+    else if (a === "unskip") setSkip(ex, false);
     else if (a === "export") doExport();
     else if (a === "import-open") { state.io = state.io === "import" ? null : "import"; state.ioMsg = ""; render(); const t = $("io-text"); if (t) t.focus(); }
     else if (a === "import-do") doImport();
