@@ -333,7 +333,7 @@ select.picker { width: 100%; border: 1px solid var(--line); background: var(--su
   /* ---------- program ---------- */
   const EXD = {
     pullups:  { name: "Prisitraukimai su svoriu", added: true, step: 1.25, inc: 1.25 },
-    row:      { name: "Chest-supported row", bar: true, step: 2.5, inc: 2.5, note: "Štanga ant aukšto suolo arba T-bar" },
+    row:      { name: "Chest-supported row su hantelėmis", step: 2, inc: 2, note: "kg = vienos hantelės svoris. Alkūnės į šonus, trauk link apatinės krūtinės" },
     curl:     { name: "Štangos lenkimas bicepsui", step: 1.25, inc: 1.25 },
     face:     { name: "Face pulls", step: 2.5, inc: 2.5 },
     squat:    { name: "Pritūpimai", bar: true, step: 2.5, inc: 2.5 },
@@ -362,6 +362,20 @@ select.picker { width: 100%; border: 1px solid var(--line); background: var(--su
     { id: "lower", name: "Lower", dow: 6, items: [s("deadlift", 3, 3, 3, 240), s("psquat", 3, 4, 4, 180), s("lcurl", 3, 6, 8, 90), s("calf", 3, 8, 10, 90), s("abw", 3, 8, 10, 90)] },
   ];
   const WMAP = Object.fromEntries(WORKOUTS.map(w => [w.id, w]));
+  const barMode = () => state.settings.barMode || "plates";
+  const U = (e, kg) => {
+    if (!e || !e.bar || barMode() === "total" || typeof kg !== "number") return kg;
+    const bar = state.settings.bar || 20;
+    const v = barMode() === "side" ? (kg - bar) / 2 : kg - bar;
+    return Math.max(0, +v.toFixed(2));
+  };
+  const fromU = (e, v) => {
+    if (!e || !e.bar || barMode() === "total") return v;
+    const bar = state.settings.bar || 20;
+    return +(barMode() === "side" ? v * 2 + bar : v + bar).toFixed(2);
+  };
+  const stepU = e => (e.bar && barMode() === "side" ? e.step / 2 : e.step);
+  const kgLabel = e => e.added ? "Papildomas svoris, kg" : !e.bar || barMode() === "total" ? "Svoris, kg" : barMode() === "side" ? "Diskai vienoje pusėje, kg" : "Tik diskai (be štangos), kg";
   const tgtKey = (wid, ex) => `${wid}:${ex}`;
   const itemsOf = wid => WMAP[wid].items.map(i => Object.assign({}, i, ((state.settings.targets || {})[tgtKey(wid, i.ex)]) || {}));
   const DOW_SHORT = ["Sk", "Pr", "An", "Tr", "Kt", "Pn", "Št"];
@@ -471,11 +485,11 @@ select.picker { width: 100%; border: 1px solid var(--line); background: var(--su
   function advice(it) {
     const e = EXD[it.ex];
     const last = lastSession(it.ex);
-    const lastLine = last ? `Praeitą kartą (${shortDate(last.key)}): ` + last.sets.map(x => (e.noKg ? `${x.reps}` : `${fmt(x.kg)}×${x.reps}`)).join(", ") : "";
+    const lastLine = last ? `Praeitą kartą (${shortDate(last.key)}): ` + last.sets.map(x => (e.noKg ? `${x.reps}` : `${fmt(U(e, x.kg))}×${x.reps}`)).join(", ") : "";
     if (deloadActive()) {
       const top = last ? Math.max(...last.sets.map(x => x.kg)) : 0;
       const kg = e.noKg ? 0 : roundTo(top * 0.6, e.step);
-      return { t: "deload", kg: last ? kg : "", reps: it.lo, text: e.noKg || !last ? `<b>Deload:</b> lengvai, ${targetSets(it)} × ${it.lo}` : `<b>Deload: ${fmt(kg)} kg</b>, ${targetSets(it)} × ${it.lo}`, last: lastLine };
+      return { t: "deload", kg: last ? kg : "", reps: it.lo, text: e.noKg || !last ? `<b>Deload:</b> lengvai, ${targetSets(it)} × ${it.lo}` : `<b>Deload: ${fmt(U(e, kg))} kg</b>, ${targetSets(it)} × ${it.lo}`, last: lastLine };
     }
     if (!last) {
       return { t: "new", kg: e.noKg || e.added ? 0 : "", reps: it.hi,
@@ -490,12 +504,12 @@ select.picker { width: 100%; border: 1px solid var(--line); background: var(--su
     const atTop = last.sets.filter(x => x.kg === top);
     if (atTop.length >= it.sets && atTop.every(x => x.reps >= it.hi)) {
       const kg = +(top + e.inc).toFixed(2);
-      return { t: "up", kg, reps: it.lo, text: `Visi priėjimai pavyko. <b>Kelk svorį: ${fmt(kg)} kg</b>`, last: lastLine };
+      return { t: "up", kg, reps: it.lo, text: `Visi priėjimai pavyko. <b>Kelk svorį: ${fmt(U(e, kg))} kg</b>`, last: lastLine };
     }
     if (atTop.some(x => x.reps < it.lo)) {
-      return { t: "hold", kg: top, reps: it.lo, text: `Buvo mažiau nei ${it.lo} pak. <b>Palik ${fmt(top)} kg</b>`, last: lastLine };
+      return { t: "hold", kg: top, reps: it.lo, text: `Buvo mažiau nei ${it.lo} pak. <b>Palik ${fmt(U(e, top))} kg</b>`, last: lastLine };
     }
-    return { t: "same", kg: top, reps: it.hi, text: `<b>Kartok ${fmt(top)} kg</b> ir siek ${it.sets} × ${it.hi}`, last: lastLine };
+    return { t: "same", kg: top, reps: it.hi, text: `<b>Kartok ${fmt(U(e, top))} kg</b> ir siek ${it.sets} × ${it.hi}`, last: lastLine };
   }
   function draftFor(it) {
     const id = `${state.w}:${it.ex}`;
@@ -503,7 +517,7 @@ select.picker { width: 100%; border: 1px solid var(--line); background: var(--su
       const today = setsFor(todayKey(), it.ex);
       const prev = today[today.length - 1];
       const a = advice(it);
-      state.draft[id] = { kg: numStr(prev ? prev.kg : a.kg), reps: String(prev ? prev.reps : a.reps) };
+      state.draft[id] = { kg: numStr(U(EXD[it.ex], prev ? prev.kg : a.kg)), reps: String(prev ? prev.reps : a.reps) };
     }
     return state.draft[id];
   }
@@ -591,7 +605,7 @@ select.picker { width: 100%; border: 1px solid var(--line); background: var(--su
     const idx = items.findIndex(i => i.ex === exId);
     const it = items[idx], e = EXD[exId];
     const d = draftFor(it);
-    const kg = e.noKg ? 0 : parseNum(d.kg), reps = Math.round(parseNum(d.reps));
+    const kg = e.noKg ? 0 : fromU(e, parseNum(d.kg)), reps = Math.round(parseNum(d.reps));
     if (!(kg >= 0) || !(reps > 0)) { const el = $(`${kg >= 0 ? "reps" : "kg"}-${exId}`); if (el) el.focus(); return false; }
     const key = todayKey();
     const old = state.days[key];
@@ -688,6 +702,7 @@ select.picker { width: 100%; border: 1px solid var(--line); background: var(--su
       if (!state.settings.cycleStart && st.cycleStart) state.settings.cycleStart = st.cycleStart;
       if (st.deloadFrom && !state.settings.deloadFrom) { state.settings.deloadFrom = st.deloadFrom; state.settings.deloadTo = st.deloadTo; }
       if (st.bar && !state.settings.bar) state.settings.bar = st.bar;
+      if (st.barMode && !state.settings.barMode) state.settings.barMode = st.barMode;
       if (st.targets && typeof st.targets === "object") state.settings.targets = Object.assign({}, st.targets, state.settings.targets);
       persistSettings();
     }
@@ -778,7 +793,7 @@ select.picker { width: 100%; border: 1px solid var(--line); background: var(--su
       const d = draftFor(it);
       const kgField = e.noKg ? "" : `
         <div class="field">
-          <label for="kg-${it.ex}">${e.added ? "Papildomas svoris, kg" : "Svoris, kg"}</label>
+          <label for="kg-${it.ex}">${kgLabel(e)}</label>
           <div class="stepper">
             <button type="button" data-action="step" data-ex="${it.ex}" data-f="kg" data-d="-1" aria-label="Mažinti svorį">−</button>
             <input id="kg-${it.ex}" data-ex="${it.ex}" data-f="kg" inputmode="decimal" autocomplete="off" enterkeyhint="done" placeholder="0" value="${d.kg}">
@@ -800,10 +815,10 @@ select.picker { width: 100%; border: 1px solid var(--line); background: var(--su
             </div>
           </div>
           ${e.added ? `<span class="hint">Tik papildomas svoris ant diržo, 0 = be svorio</span>` : e.note ? `<span class="hint">${e.note}</span>` : ""}
-          ${e.bar ? `<div class="plates" id="plates-${it.ex}">${platesHtml(parseNum(d.kg))}</div>` : ""}
+          ${e.bar ? `<div class="plates" id="plates-${it.ex}">${platesHtml(fromU(e, parseNum(d.kg)))}</div>` : ""}
           ${addBtn(it, today, tgt, ready)}
           ${today.length ? `<div class="today">${today.map(x => `
-            <span class="chip${x.reps < it.lo ? " miss" : ""}"><span class="num">${e.noKg ? `${x.reps} pak.` : `${fmt(x.kg)} × ${x.reps}`}</span>
+            <span class="chip${x.reps < it.lo ? " miss" : ""}"><span class="num">${e.noKg ? `${x.reps} pak.` : `${fmt(U(e, x.kg))} × ${x.reps}`}</span>
               <button type="button" class="x" data-action="del-set" data-k="${tk}" data-t="${x.t}" aria-label="Ištrinti priėjimą">×</button></span>`).join("")}</div>` : ""}
         </div>`;
     }
@@ -892,8 +907,8 @@ select.picker { width: 100%; border: 1px solid var(--line); background: var(--su
       const useReps = ss.every(p => p.kg === 0);
       const best = ss.reduce((a, b) => (useReps ? (b.maxReps > a.maxReps ? b : a) : (b.kg > a.kg || (b.kg === a.kg && b.reps > a.reps) ? b : a)));
       const bestE1 = Math.max(...ss.map(p => p.e1));
-      const v = useReps ? `${best.maxReps} pak.` : `${fmt(best.kg)} kg × ${best.reps}`;
-      const sub = `${shortDate(best.k)}${e.bar && !useReps ? ` · apskaičiuotas 1RM ~${fmt(Math.round(bestE1))} kg` : ""}${e.added && !useReps ? " · papildomas svoris" : ""}`;
+      const v = useReps ? `${best.maxReps} pak.` : `${fmt(U(e, best.kg))} kg × ${best.reps}`;
+      const sub = `${shortDate(best.k)}${e.bar && !useReps ? ` · apskaičiuotas 1RM su štanga ~${fmt(Math.round(bestE1))} kg` : ""}${e.added && !useReps ? " · papildomas svoris" : ""}`;
       return `<li><button type="button" data-action="chart" data-ex="${ex}"><span class="n">${e.name}</span><span class="v">${v}</span><span class="s">${sub}</span></button></li>`;
     }).join("");
     return `
@@ -915,7 +930,7 @@ select.picker { width: 100%; border: 1px solid var(--line); background: var(--su
       return `<div class="empty">${pts.length ? "Dar viena treniruotė, ir čia atsiras grafikas." : `Kai įrašysi bent 2 treniruotes su „${e.name}“, čia matysi, kaip auga svoris.`}</div>`;
     }
     const useReps = pts.every(p => p.kg === 0);
-    const val = p => (useReps ? p.maxReps : p.kg);
+    const val = p => (useReps ? p.maxReps : U(e, p.kg));
     const W = 360, H = 190, L = 36, R = 8, T = 24, B = 24;
     let lo = Math.min(...pts.map(val)), hi = Math.max(...pts.map(val));
     const span = hi - lo || Math.max(hi * 0.2, 5);
@@ -941,12 +956,12 @@ select.picker { width: 100%; border: 1px solid var(--line); background: var(--su
         <path d="${area}" fill="var(--accent)" fill-opacity="0.12"/>
         <path d="${line}" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
         ${pts.map((p, i) => `<circle cx="${x(i)}" cy="${y(val(p))}" r="${i === pts.length - 1 ? 5 : 3}" fill="${i === pts.length - 1 ? "var(--accent)" : "var(--surface)"}" stroke="var(--accent)" stroke-width="2"/>`).join("")}
-        <text x="${Math.min(lx, W - R)}" y="${Math.max(ly - 11, 14)}" text-anchor="end" font-size="14" font-weight="600" fill="var(--ink)" font-family="var(--display)">${useReps ? `${last.maxReps} pak.` : `${fmt(last.kg)} kg × ${last.reps}`}</text>
+        <text x="${Math.min(lx, W - R)}" y="${Math.max(ly - 11, 14)}" text-anchor="end" font-size="14" font-weight="600" fill="var(--ink)" font-family="var(--display)">${useReps ? `${last.maxReps} pak.` : `${fmt(U(e, last.kg))} kg × ${last.reps}`}</text>
         <text x="${L}" y="${H - 6}" font-size="11" fill="var(--muted)" font-family="var(--body)">${shortDate(first.k)}</text>
         <text x="${W - R}" y="${H - 6}" text-anchor="end" font-size="11" fill="var(--muted)" font-family="var(--body)">${shortDate(last.k)}</text>
       </svg>
       <div class="stats">
-        <span class="stat">Rekordas<b>${useReps ? `${best.maxReps} pak.` : `${fmt(best.kg)}×${best.reps}`}</b></span>
+        <span class="stat">Rekordas<b>${useReps ? `${best.maxReps} pak.` : `${fmt(U(e, best.kg))}×${best.reps}`}</b></span>
         <span class="stat">Pokytis<b>${delta > 0 ? "+" : ""}${fmt(delta)}${unit}</b></span>
         <span class="stat">Treniruočių<b>${pts.length}</b></span>
       </div>
@@ -965,7 +980,7 @@ select.picker { width: 100%; border: 1px solid var(--line); background: var(--su
         const rows = exs.map(ex => {
           const e = EXD[ex] || { name: ex };
           const st = setsFor(k, ex);
-          return `<div class="day-row"><span>${e.name}</span><span class="sets">${st.map(x => `<span>${e.noKg ? x.reps : `${fmt(x.kg)}×${x.reps}`}${editing ? `<button type="button" class="x" data-action="del-set" data-k="${k}" data-t="${x.t}" aria-label="Ištrinti">×</button>` : ""}</span>`).join("")}</span></div>`;
+          return `<div class="day-row"><span>${e.name}</span><span class="sets">${st.map(x => `<span>${e.noKg ? x.reps : `${fmt(U(e, x.kg))}×${x.reps}`}${editing ? `<button type="button" class="x" data-action="del-set" data-k="${k}" data-t="${x.t}" aria-label="Ištrinti">×</button>` : ""}</span>`).join("")}</span></div>`;
         }).join("");
         const confirming = state.confirmDel === k;
         return `<li class="day">
@@ -987,6 +1002,8 @@ select.picker { width: 100%; border: 1px solid var(--line); background: var(--su
         <div class="settings">
           <div class="setting"><span>Štangos svoris</span>
             <span class="seg">${[20, 15].map(b => `<button type="button" data-action="bar" data-b="${b}" aria-pressed="${bar === b}">${b} kg</button>`).join("")}</span></div>
+          <div class="setting"><span>Štangos pratimuose rašau</span>
+            <span class="seg">${[["total", "Su štanga"], ["plates", "Tik diskus"], ["side", "Vieną pusę"]].map(([v, t]) => `<button type="button" data-action="barmode" data-m="${v}" aria-pressed="${barMode() === v}">${t}</button>`).join("")}</span></div>
           <div class="setting"><span>Ciklas ${c ? `nuo ${shortDate(c)}` : "dar neprasidėjo"}${deloadActive() ? " · dabar deload" : ""}</span>
             ${deloadActive() ? `<button type="button" class="btn" data-action="deload-end">Baigti deload</button>` : `<button type="button" class="btn" data-action="deload-start">Pradėti deload</button>`}</div>
           ${IS_PWA ? `
@@ -1126,10 +1143,10 @@ select.picker { width: 100%; border: 1px solid var(--line); background: var(--su
     else if (a === "step") {
       const it = itemsOf(state.w).find(i => i.ex === ex), e = EXD[ex], d = draftFor(it), f = b.dataset.f, dir = +b.dataset.d;
       const curV = parseNum(d[f]) || 0;
-      const next = f === "kg" ? Math.max(0, +(curV + dir * e.step).toFixed(2)) : Math.max(1, Math.round(curV) + dir);
+      const next = f === "kg" ? Math.max(0, +(curV + dir * stepU(e)).toFixed(2)) : Math.max(1, Math.round(curV) + dir);
       d[f] = f === "kg" ? numStr(next) : String(next);
       const inp = $(`${f}-${ex}`); if (inp) inp.value = d[f];
-      if (f === "kg" && e.bar) { const p = $(`plates-${ex}`); if (p) p.innerHTML = platesHtml(next); }
+      if (f === "kg" && e.bar) { const p = $(`plates-${ex}`); if (p) p.innerHTML = platesHtml(fromU(e, next)); }
     }
     else if (a === "add") {
       if (b.tagName === "A") { if (!addSet(ex, true)) ev.preventDefault(); }
@@ -1150,7 +1167,8 @@ select.picker { width: 100%; border: 1px solid var(--line); background: var(--su
     else if (a === "del-day") { removeDay(b.dataset.k); state.editDay = null; }
     else if (a === "edit-day") { state.editDay = b.dataset.k || null; state.confirmDel = null; render(); }
     else if (a === "more") { state.histLimit += 15; render(); }
-    else if (a === "bar") { state.settings.bar = +b.dataset.b; persistSettings(); render(); }
+    else if (a === "barmode") { state.settings.barMode = b.dataset.m; persistSettings(); state.draft = {}; render(); }
+    else if (a === "bar") { state.settings.bar = +b.dataset.b; persistSettings(); state.draft = {}; render(); }
     else if (a === "deload-start") startDeload();
     else if (a === "deload-end") endDeload();
     else if (a === "timer-add") adjustTimer(30);
@@ -1167,7 +1185,7 @@ select.picker { width: 100%; border: 1px solid var(--line); background: var(--su
     if (el.dataset.f.startsWith("tg")) return;
     const it = itemsOf(state.w).find(i => i.ex === el.dataset.ex); if (!it) return;
     draftFor(it)[el.dataset.f] = el.value;
-    if (el.dataset.f === "kg" && EXD[it.ex].bar) { const p = $(`plates-${it.ex}`); if (p) p.innerHTML = platesHtml(parseNum(el.value)); }
+    if (el.dataset.f === "kg" && EXD[it.ex].bar) { const p = $(`plates-${it.ex}`); if (p) p.innerHTML = platesHtml(fromU(EXD[it.ex], parseNum(el.value))); }
   });
   document.addEventListener("keydown", ev => {
     const el = ev.target;
