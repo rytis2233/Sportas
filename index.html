@@ -159,6 +159,7 @@ a.add { display: block; text-align: center; text-decoration: none; }
 .tg-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
 .tg-in { width: 100%; min-width: 0; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); padding: 8px 4px; text-align: center; font-family: var(--display); font-size: 22px; font-weight: 600; }
 .tgt-edit .field label { font-size: 10px; }
+.tg-name { text-align: left; font-family: var(--body); font-size: 16px; font-weight: 500; padding: 10px; }
 .steps { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; font-size: 14px; }
 .steps b { font-weight: 600; }
 .add:disabled { opacity: .5; }
@@ -362,6 +363,9 @@ select.picker { width: 100%; border: 1px solid var(--line); background: var(--su
     { id: "lower", name: "Lower", dow: 6, items: [s("deadlift", 3, 3, 3, 240), s("psquat", 3, 4, 4, 180), s("lcurl", 3, 6, 8, 90), s("calf", 3, 8, 10, 90), s("abw", 3, 8, 10, 90)] },
   ];
   const WMAP = Object.fromEntries(WORKOUTS.map(w => [w.id, w]));
+  const escH = t => String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  const rawName = ex => ((state.settings.names || {})[ex]) || (EXD[ex] || { name: ex }).name;
+  const exName = ex => escH(((state.settings.names || {})[ex]) || (EXD[ex] || { name: ex }).name);
   const barMode = () => state.settings.barMode || "plates";
   const U = (e, kg) => {
     if (!e || !e.bar || barMode() === "total" || typeof kg !== "number") return kg;
@@ -618,10 +622,10 @@ select.picker { width: 100%; border: 1px solid var(--line); background: var(--su
     persistDay(key);
     if (!state.settings.cycleStart) { state.settings.cycleStart = cycleStartKey() || key; persistSettings(); }
     const done = setsFor(key, exId).length;
-    let label = `Poilsis · ${e.name}`;
+    let label = `Poilsis · ${rawName(exId)}`;
     if (done >= targetSets(it)) {
       const next = items.slice(idx + 1).find(i => setsFor(key, i.ex).length < targetSets(i)) || items.find(i => setsFor(key, i.ex).length < targetSets(i));
-      if (next) { state.open = next.ex; label = `Toliau: ${EXD[next.ex].name}`; }
+      if (next) { state.open = next.ex; label = `Toliau: ${rawName(next.ex)}`; }
       else { state.open = null; label = "Treniruotė baigta"; }
     }
     if (label !== "Treniruotė baigta") startTimer(it.rest, label); else stopTimer();
@@ -702,6 +706,7 @@ select.picker { width: 100%; border: 1px solid var(--line); background: var(--su
       if (!state.settings.cycleStart && st.cycleStart) state.settings.cycleStart = st.cycleStart;
       if (st.deloadFrom && !state.settings.deloadFrom) { state.settings.deloadFrom = st.deloadFrom; state.settings.deloadTo = st.deloadTo; }
       if (st.bar && !state.settings.bar) state.settings.bar = st.bar;
+      if (st.names && typeof st.names === "object") state.settings.names = Object.assign({}, st.names, state.settings.names);
       if (st.barMode && !state.settings.barMode) state.settings.barMode = st.barMode;
       if (st.targets && typeof st.targets === "object") state.settings.targets = Object.assign({}, st.targets, state.settings.targets);
       persistSettings();
@@ -826,7 +831,7 @@ select.picker { width: 100%; border: 1px solid var(--line); background: var(--su
       <li class="ex" data-open="${open ? 1 : 0}" data-done="${today.length >= tgt ? 1 : 0}">
         <button type="button" class="ex-row" data-action="toggle" data-ex="${it.ex}" aria-expanded="${open}">
           <span class="ex-idx">${i + 1}</span>
-          <span><span class="ex-name">${e.name}</span><span class="ex-meta"><span class="tgt">${tgt} × ${repsTxt(it)}${perTxt}</span> · poilsis ${restTxt(it.rest)}</span></span>
+          <span><span class="ex-name">${exName(it.ex)}</span><span class="ex-meta"><span class="tgt">${tgt} × ${repsTxt(it)}${perTxt}</span> · poilsis ${restTxt(it.rest)}</span></span>
           <span class="dots" aria-label="${today.length} iš ${tgt}">${dots}</span>
         </button>${body}
       </li>`;
@@ -835,17 +840,19 @@ select.picker { width: 100%; border: 1px solid var(--line); background: var(--su
   function tgtEditHtml(it) {
     const key = tgtKey(state.w, it.ex);
     const custom = !!(state.settings.targets && state.settings.targets[key]);
+    const named = !!(state.settings.names && state.settings.names[it.ex]);
     if (state.editTarget !== it.ex) {
-      return `<div class="tgt-row"><button type="button" class="link" data-action="tgt-open" data-ex="${it.ex}">Keisti priėjimus ir pakartojimus</button>${custom ? `<span class="hint">· pakeista tau</span>` : ""}</div>`;
+      return `<div class="tgt-row"><button type="button" class="link" data-action="tgt-open" data-ex="${it.ex}">Redaguoti pratimą</button>${custom || named ? `<span class="hint">· pakeista tau</span>` : ""}</div>`;
     }
     const f = (id, label, v) => `<div class="field"><label for="${id}">${label}</label><input class="tg-in" id="${id}" data-ex="${it.ex}" data-f="${id}" inputmode="numeric" autocomplete="off" value="${v}"></div>`;
     return `<div class="tgt-edit">
+      <div class="field"><label for="tg-name">Pavadinimas</label><input class="tg-in tg-name" id="tg-name" data-ex="${it.ex}" data-f="tg-name" autocomplete="off" maxlength="60" value="${exName(it.ex)}"></div>
       <div class="tg-grid">${f("tg-sets", "Priėjimai", it.sets)}${f("tg-lo", "Pak. nuo", it.lo)}${f("tg-hi", "Pak. iki", it.hi)}${f("tg-rest", "Poilsis, s", it.rest)}</div>
       ${state.tgtErr ? `<span class="hint" style="color:var(--danger)">${state.tgtErr}</span>` : ""}
-      <span class="hint">Galioja tik ${WMAP[state.w].name} dienai. Jei pakartojimų skaičius vienas, abiejuose laukeliuose įrašyk tą patį.</span>
+      <span class="hint">Pavadinimas keičiasi visose dienose ir istorijoje. Priėjimai, pakartojimai ir poilsis galioja tik ${WMAP[state.w].name} dienai. Jei pakartojimų skaičius vienas, abiejuose laukeliuose įrašyk tą patį.</span>
       <div class="btns" style="display:flex;gap:8px;flex-wrap:wrap">
         <button type="button" class="btn primary" data-action="tgt-save" data-ex="${it.ex}">Išsaugoti</button>
-        ${custom ? `<button type="button" class="btn" data-action="tgt-reset" data-ex="${it.ex}">Grąžinti pradinį</button>` : ""}
+        ${custom || named ? `<button type="button" class="btn" data-action="tgt-reset" data-ex="${it.ex}">Grąžinti pradinį</button>` : ""}
         <button type="button" class="btn" data-action="tgt-cancel">Atšaukti</button>
       </div>
     </div>`;
@@ -859,6 +866,12 @@ select.picker { width: 100%; border: 1px solid var(--line); background: var(--su
       render(); return;
     }
     state.settings.targets = Object.assign({}, state.settings.targets, { [tgtKey(state.w, ex)]: { sets, lo, hi, rest } });
+    const def = WMAP[state.w].items.find(i => i.ex === ex);
+    if (def && def.sets === sets && def.lo === lo && def.hi === hi && def.rest === rest) { const t2 = Object.assign({}, state.settings.targets); delete t2[tgtKey(state.w, ex)]; state.settings.targets = t2; }
+    const nm = (($("tg-name") || {}).value || "").trim().slice(0, 60);
+    const names = Object.assign({}, state.settings.names);
+    if (nm && nm !== EXD[ex].name) names[ex] = nm; else delete names[ex];
+    state.settings.names = names;
     persistSettings();
     delete state.draft[`${state.w}:${ex}`];
     state.editTarget = null; state.tgtErr = "";
@@ -866,7 +879,9 @@ select.picker { width: 100%; border: 1px solid var(--line); background: var(--su
   }
   function resetTarget(ex) {
     const t = Object.assign({}, state.settings.targets); delete t[tgtKey(state.w, ex)];
-    state.settings.targets = t; persistSettings();
+    state.settings.targets = t;
+    const names = Object.assign({}, state.settings.names); delete names[ex]; state.settings.names = names;
+    persistSettings();
     delete state.draft[`${state.w}:${ex}`];
     state.editTarget = null; state.tgtErr = "";
     render();
@@ -898,7 +913,7 @@ select.picker { width: 100%; border: 1px solid var(--line); background: var(--su
     const seen = new Set();
     const opts = WORKOUTS.map(w => {
       const items = w.items.filter(i => !seen.has(i.ex) && seen.add(i.ex));
-      return items.length ? `<optgroup label="${w.name}">${items.map(i => `<option value="${i.ex}"${i.ex === state.chartEx ? " selected" : ""}>${EXD[i.ex].name}</option>`).join("")}</optgroup>` : "";
+      return items.length ? `<optgroup label="${w.name}">${items.map(i => `<option value="${i.ex}"${i.ex === state.chartEx ? " selected" : ""}>${exName(i.ex)}</option>`).join("")}</optgroup>` : "";
     }).join("");
     const recs = EX_ORDER.map(ex => {
       const ss = sessionsFor(ex);
@@ -909,7 +924,7 @@ select.picker { width: 100%; border: 1px solid var(--line); background: var(--su
       const bestE1 = Math.max(...ss.map(p => p.e1));
       const v = useReps ? `${best.maxReps} pak.` : `${fmt(U(e, best.kg))} kg × ${best.reps}`;
       const sub = `${shortDate(best.k)}${e.bar && !useReps ? ` · apskaičiuotas 1RM su štanga ~${fmt(Math.round(bestE1))} kg` : ""}${e.added && !useReps ? " · papildomas svoris" : ""}`;
-      return `<li><button type="button" data-action="chart" data-ex="${ex}"><span class="n">${e.name}</span><span class="v">${v}</span><span class="s">${sub}</span></button></li>`;
+      return `<li><button type="button" data-action="chart" data-ex="${ex}"><span class="n">${exName(ex)}</span><span class="v">${v}</span><span class="s">${sub}</span></button></li>`;
     }).join("");
     return `
       <section aria-labelledby="h-chart">
@@ -927,7 +942,7 @@ select.picker { width: 100%; border: 1px solid var(--line); background: var(--su
     const e = EXD[ex];
     const pts = sessionsFor(ex);
     if (pts.length < 2) {
-      return `<div class="empty">${pts.length ? "Dar viena treniruotė, ir čia atsiras grafikas." : `Kai įrašysi bent 2 treniruotes su „${e.name}“, čia matysi, kaip auga svoris.`}</div>`;
+      return `<div class="empty">${pts.length ? "Dar viena treniruotė, ir čia atsiras grafikas." : `Kai įrašysi bent 2 treniruotes su „${exName(ex)}“, čia matysi, kaip auga svoris.`}</div>`;
     }
     const useReps = pts.every(p => p.kg === 0);
     const val = p => (useReps ? p.maxReps : U(e, p.kg));
@@ -980,7 +995,7 @@ select.picker { width: 100%; border: 1px solid var(--line); background: var(--su
         const rows = exs.map(ex => {
           const e = EXD[ex] || { name: ex };
           const st = setsFor(k, ex);
-          return `<div class="day-row"><span>${e.name}</span><span class="sets">${st.map(x => `<span>${e.noKg ? x.reps : `${fmt(U(e, x.kg))}×${x.reps}`}${editing ? `<button type="button" class="x" data-action="del-set" data-k="${k}" data-t="${x.t}" aria-label="Ištrinti">×</button>` : ""}</span>`).join("")}</span></div>`;
+          return `<div class="day-row"><span>${exName(ex)}</span><span class="sets">${st.map(x => `<span>${e.noKg ? x.reps : `${fmt(U(e, x.kg))}×${x.reps}`}${editing ? `<button type="button" class="x" data-action="del-set" data-k="${k}" data-t="${x.t}" aria-label="Ištrinti">×</button>` : ""}</span>`).join("")}</span></div>`;
         }).join("");
         const confirming = state.confirmDel === k;
         return `<li class="day">
