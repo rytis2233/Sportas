@@ -1,5 +1,5 @@
 # Šešiakampis stoglangis iš polikarbonato (patikrinta ir pataisyta)
-Vaizdai: `stoglangis-3d-zingsniai.png` (3D + surinkimas), `stoglangis-pjovimas.png` (pjovimo brėžiniai).
+Vaizdai: `stoglangis-3d-zingsniai.png` (3D + surinkimas), `stoglangis-pjovimas.png` (pjovimo brėžiniai), `stoglangis-mazgai-pirkiniai.png` (mazgai iš arti, pirkiniai, patikrinimas).
 Tyrimo ataskaita: `reports/Šešiakampis polikarbonato stoglangis.md`
 
 ## Esamas rėmas
@@ -12,9 +12,9 @@ Tyrimo ataskaita: `reports/Šešiakampis polikarbonato stoglangis.md`
 - Gegnės nusklembimas 17,7° į abi puses (tan β = sin 33,56° / tan 60°)
 
 ## Pjovimo sąrašas
-- 6 briaunų gegnės, tašas 70×70 (ruošinys 120 cm): viršus 110,4 cm, apačia 103,0 cm; viršutinis pjūvis 33,6° nuo statmens; atramos pjūvis horizontalus 6,1 cm; galas 4,3 cm aukščio, 2 cm iki rėmo kampo
-- Centrinis mazgas: šešiakampis 14 cm tarp plokštumų, 16 cm aukščio, viršus 63,5 cm virš rėmo (ne aukščiau 63,8)
-- 6 atraminės juostelės: trapecija, plotis = rėmo plotis (6,9), aukštis išorėje 3,0, viduje 8,3 (rėmas 10 cm → 10,7); išorinis kraštas 92,9 cm, galai 60°
+- 6 briaunų gegnės, tašas 70×70 (ruošinys 120 cm, detalė užima 112,8 cm; atramos pjūvį pjauti rankiniu pjūklu): viršus 110,4 cm, apačia 103,0 cm; viršutinis pjūvis 33,6° nuo statmens; atramos pjūvis horizontalus 6,1 cm; galas 4,3 cm aukščio, 2 cm iki rėmo kampo
+- Centrinis mazgas: šešiakampis 14 cm tarp plokštumų, 16 cm aukščio (atraiža iš 150×200, plaušai vertikaliai – iš 150×150 neišeis), viršus 63,5 cm virš rėmo (ne aukščiau 63,8)
+- 6 atraminės juostelės iš 45×70: trapecija 4,5 cm pločio, aukštis išorėje 3,0, viduje 6,45; išorinis kraštas 92,9, vidinis 87,7 cm, galai 60° (tinka bet kokiam rėmo pločiui)
 - 6 polikarbonato trikampiai: pagrindas 104,5, aukštis 114,0, šonai 125,4 cm, kampai 65,4/65,4/49,2°; viršūnė nupjauta 8 cm; šonai 3 mm į vidų
 
 ## Polikarbonatas
@@ -23,6 +23,9 @@ Tyrimo ataskaita: `reports/Šešiakampis polikarbonato stoglangis.md`
 - Kanalai išilgai trikampio aukščio, UV pusė į viršų
 - Kanalų viršutiniai galai yra briaunose → šonai ir viršus SANDARI Al juosta; apačia perforuota juosta + Al U/F profilis su skylutėmis (juostos 50–60 mm pločio)
 - Varžtų per lapą nesukti; tarpas briaunoje 5–6 mm; plėtimasis ~3–4 mm/m
+
+## Kiekiai
+- Sandari Al juosta ~15 m (pirkti ≥ 20 m), perforuota ~6,3 m, EPDM ~19 m ant karkaso (+ po dangteliais, iš viso ~35 m)
 
 ## Kiti priedai
 - Al briaunų dangteliai lenkti 35,4° ant EPDM, varžtai su EPDM poveržlėmis kas ~30 cm per tarpą į gegnę
