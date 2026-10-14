@@ -1,4 +1,30 @@
-# Šešiakampis stoglangis iš polikarbonato (patikrinta ir pataisyta)
+# Stoglangis iš polikarbonato / akrilo
+
+## !!! RĖMAS YRA SEPTYNKAMPIS (7 kraštinės) – galioja šis skyrius
+Žemiau esantys šešiakampio skaičiai ir brėžiniai `stoglangis-*.png` NEBEGALIOJA (buvo skaičiuota 6 kraštinėms).
+
+Rėmas: kraštinė išorėje 101, viduje 93 cm → rėmo plotis 8,3 cm (užrašyta 10 cm – permatuoti). Apibrėžto apskritimo spindulys 116,4 cm, apotema 104,9 cm, vidinis kampas 128,6°.
+Stogas pakeltas 3 cm virš rėmo (veikia ir septynkampiui, reikia ≥2,8 cm), viršūnė 70 cm virš rėmo.
+
+| | Septynkampis |
+|---|---|
+| Plokštumos nuolydis | 32,6° |
+| Briaunos nuolydis | 29,9° (briauna iki viršūnės 134,3 cm) |
+| Kampas tarp plokštumų | 153,0° → dangtelio lenkimas 27,0° |
+| Gegnės nusklembimas | 13,5° į abi puses |
+| Gegnės 70×70, 7 vnt. | viršus 122,5, apačia 114,3 cm; viršutinis pjūvis 29,9° nuo statmens; atrama 7,1 cm; galas 4,0 cm aukščio, 1,7 cm iki rėmo kampo; ruošinys 130 cm |
+| Centrinis mazgas | septynkampis 17 cm per plokštumas (plokštuma 8,2, per kampus 18,9), 16 cm aukščio, viršus 63,5 (≤ 64,0) |
+| Atraminė juostelė 45×70, 7 vnt. | 3,0 / 5,9 cm, nuožulna 32,6°, išorinis 93,2, vidinis 88,9 cm, galai 25,7° nuo statmens |
+| Lapas (trikampis), 7 vnt. | pagrindas 103,9, aukštis 128,0, šonai 138,1 cm; kampai 67,9/67,9/44,2° (3 cm užlaida, viršūnė nupjauta 8 cm) |
+| Išpjovimas iš 2100×6000 | 4 eilės × 2 (7 vietos panaudotos): 156 × 512 cm – užtenka 1 lapo |
+| Akrilas (2 trikampiai į stačiakampį) | 3 × 1560×1280 + 1 × 1040×1280 mm, arba 7 figūriniai 1039×1280 |
+| Stogo plotas / svoris | 4,65 m²; polikarbonatas 20 mm ~14 kg, akrilas 6 mm ~33 kg |
+| Sniegas (μ = 0,73) | 0,88 / 1,17 kN/m² |
+| Kiekiai | sandari Al juosta ~19 m, perforuota ~7,3 m, EPDM ~24 m |
+
+---
+
+# (SENA) Šešiakampio versija
 Vaizdai: `stoglangis-3d-zingsniai.png` (3D + surinkimas), `stoglangis-pjovimas.png` (pjovimo brėžiniai), `stoglangis-mazgai-pirkiniai.png` (mazgai iš arti, pirkiniai, patikrinimas).
 Tyrimo ataskaita: `reports/Šešiakampis polikarbonato stoglangis.md`
 
