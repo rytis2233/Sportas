@@ -1,7 +1,7 @@
 # Stoglangis iš polikarbonato / akrilo
 
 ## !!! RĖMAS YRA SEPTYNKAMPIS (7 kraštinės) – galioja šis skyrius
-Žemiau esantys šešiakampio skaičiai ir brėžiniai `stoglangis-*.png` NEBEGALIOJA (buvo skaičiuota 6 kraštinėms).
+Septynkampio brėžiniai: `stoglangis7-3d-zingsniai.png`, `stoglangis7-pjovimas.png`. Žemiau esantys šešiakampio skaičiai ir `stoglangis-*.png` NEBEGALIOJA.
 
 Rėmas: kraštinė išorėje 101, viduje 93 cm → rėmo plotis 8,3 cm (užrašyta 10 cm – permatuoti). Apibrėžto apskritimo spindulys 116,4 cm, apotema 104,9 cm, vidinis kampas 128,6°.
 Stogas pakeltas 3 cm virš rėmo (veikia ir septynkampiui, reikia ≥2,8 cm), viršūnė 70 cm virš rėmo.
