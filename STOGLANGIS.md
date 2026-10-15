@@ -111,3 +111,4 @@ Prielaidos: gegnės 50×200 (patvirtinta vartotojo, C24/C18), murlotas r≈4,75 
 - Murlotas tarp stovų (2,1 m, gegnė per vidurį): 50×200 ant briaunos ~90 % – ribinis; geriau gegnes virš stovų arba dvigubas murlotas
 - Nuotrauka (2024-09-22, statyba): karkasas – stambūs kvadratiniai stulpai (~15–20 × 15–20) su įstrižais spyriais, murlotas – stambios sijos (14 kampų daugiakampis ant stulpų), gegnės 5×20 radialiai į žiedą; statant buvo laikinas centrinis bokštas
 - Išvada: stulpai (~1,2 t kiekvienam) ir murlotas tarp stulpų – su didele atsarga; liko patikrinti tik murloto sujungimus virš stulpų (tempimas ~1,5 t) ir gegnių tvirtinimą prie murloto/žiedo
+- Patvirtinta: stulpai ir murlotas 20×20. Stulpas laiko ~40 t (reikia ~1,7 t ULS); murlotas tarp stulpų išnaudotas ~25 %; pati sija tempimą (~1,5 t) laiko lengvai – svarbūs tik sujungimai
