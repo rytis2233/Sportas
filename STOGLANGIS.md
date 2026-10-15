@@ -86,3 +86,10 @@ Vaizdai: `bokstelis-konstrukcija-3d.png`, `bokstelis-brezinys.png`
 - Stogelis 40°, užlaida 15: 7 briaunų gegnės 45×120 ~157 cm, nuolydis 37,1°, nusklembimas 16,2°; mazgas septynkampis 16/20
 - Apkala ~6,4 m² (7 trikampiai 115,4 × 156,5), čerpės ~7 m²
 - Svoris ~380 kg (300–450), sniegas ~320–420 kg
+
+## Pastaba: žiedas žemiau čerpių
+- Vartotojas: esamo žiedo viršus yra ŽEMIAU stogo čerpių paviršiaus (skirtumas X cm – dar nežinomas)
+- Taisyklė: apatinė juosta virš čerpių turi būti ≥ 15 cm → juostos aukštis nuo žiedo ≥ X + 15 (+ ~3 cm atsargos)
+- Dabartinė juosta 22,5 cm tinka, jei X ≤ ~5 cm; jei daugiau – juostą aukštinti (pvz. padas ant briaunos 45×145/195), visas bokštelis pakyla tiek pat
+- Kūgio viršuje vanduo bėga nuo bokštelio į visas puses → užtenka apykaklės skardos (L): vertikali dalis ant juostos ≥ 15 cm, apatinė užlaida ant čerpių 15–20 cm, viršus po lašeline lenta, apačia ant bitumo klijų
+- Tarpas tarp žiedo ir čerpių krašto užpildomas/užsandarinamas prieš skardą; žiedas lieka po bokšteliu sausas
