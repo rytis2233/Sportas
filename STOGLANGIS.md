@@ -93,3 +93,5 @@ Vaizdai: `bokstelis-konstrukcija-3d.png`, `bokstelis-brezinys.png`
 - Dabartinė juosta 22,5 cm tinka, jei X ≤ ~5 cm; jei daugiau – juostą aukštinti (pvz. padas ant briaunos 45×145/195), visas bokštelis pakyla tiek pat
 - Kūgio viršuje vanduo bėga nuo bokštelio į visas puses → užtenka apykaklės skardos (L): vertikali dalis ant juostos ≥ 15 cm, apatinė užlaida ant čerpių 15–20 cm, viršus po lašeline lenta, apačia ant bitumo klijų
 - Tarpas tarp žiedo ir čerpių krašto užpildomas/užsandarinamas prieš skardą; žiedas lieka po bokšteliu sausas
+- Išmatuota: žiedas ~3 cm žemiau OSB (čerpės ~4 cm virš žiedo) → dabartinė juosta 22,5 cm tinka, virš čerpių lieka ~18 cm; skarda iki ~20 cm nuo žiedo (16 cm virš čerpių), ant čerpių ~18 cm
+- Vaizdai: `bokstelis-apacia-pjuvis.png`, `bokstelis-1-vaizdas.png`, `bokstelis-2-apacia.png`
