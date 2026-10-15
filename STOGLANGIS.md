@@ -95,3 +95,7 @@ Vaizdai: `bokstelis-konstrukcija-3d.png`, `bokstelis-brezinys.png`
 - Tarpas tarp žiedo ir čerpių krašto užpildomas/užsandarinamas prieš skardą; žiedas lieka po bokšteliu sausas
 - Išmatuota: žiedas ~3 cm žemiau OSB (čerpės ~4 cm virš žiedo) → dabartinė juosta 22,5 cm tinka, virš čerpių lieka ~18 cm; skarda iki ~20 cm nuo žiedo (16 cm virš čerpių), ant čerpių ~18 cm
 - Vaizdai: `bokstelis-apacia-pjuvis.png`, `bokstelis-1-vaizdas.png`, `bokstelis-2-apacia.png`
+
+## Namo (didžiojo pastato) matmenys
+- Vidinis plotas 63 m² (apvalus) → vidinis skersmuo ~8,96 m, vidinis perimetras ~28,1 m
+- Išorinis skersmuo priklauso nuo sienų storio: 40 cm → ~9,76 m (perim. ~30,7 m); 50 cm → ~9,96 m (perim. ~31,3 m)
