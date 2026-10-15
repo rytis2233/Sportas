@@ -113,3 +113,6 @@ Prielaidos: gegnės 50×200 (patvirtinta vartotojo, C24/C18), murlotas r≈4,75 
 - Išvada: stulpai (~1,2 t kiekvienam) ir murlotas tarp stulpų – su didele atsarga; liko patikrinti tik murloto sujungimus virš stulpų (tempimas ~1,5 t) ir gegnių tvirtinimą prie murloto/žiedo
 - Patvirtinta: stulpai ir murlotas 20×20. Stulpas laiko ~40 t (reikia ~1,7 t ULS); murlotas tarp stulpų išnaudotas ~25 %; pati sija tempimą (~1,5 t) laiko lengvai – svarbūs tik sujungimai
 - Gegnės prie murloto: kampuočiai iš abiejų pusių + ilgos vinys į murlotą → gerai (gegnei tenka ~0,85 t žemyn ir ~0,35 t į išorę, ULS)
+- Nuotraukos (2024-09): murloto sijos ant stulpo sudurtos įstrižai (galai su ~2–3 mm tarpu), kiekvienas galas prisuktas varžtais žemyn į stulpą; stulpas–sija dar su perforuotu kampuočiu iš vienos pusės. Plieno PER sujungimą nesimato
+- Vertinimas: savo svoriui (~0,35 t tempimas) užtenka (stovi nuo 2024 be problemų); gausiam sniegui (~1–1,5 t) varžtai į stulpo galą – ant ribos/nepatikima
+- Rekomendacija (pigu, 14 sujungimų): per kiekvieną sujungimą iš vidaus pusės 2 pilno sriegio varžtai 8×300 kryžmai per sandūrą ARBA lenkta plieninė plokštelė 2–3 mm ~100×400 su ~10 inkarinių vinių/varžtų kiekvienoje pusėje; patikrinti tarpus sujungimuose po žiemos
