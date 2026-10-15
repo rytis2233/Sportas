@@ -138,3 +138,4 @@ Prielaidos: gegnės 50×200 (patvirtinta vartotojo, C24/C18), murlotas r≈4,75 
   - Su normos sniegu: murloto tempimas ~11 kN ULS (+bokštelis ~12–13 kN) → trosas ≥8 mm IWRC pakanka (~60 %), 6 mm – ne; 10 mm nebūtinas
   - Gegnės C16 ~75 %, žiedas C16 su bokšteliu ~60–70 %
   - Leidimai: kaimas rajone (ne miestas); jei pastatas ≤80 m² ir ≤8,5 m – nesudėtingas II gr.; bokštelis su smaigaliu ~8,3 m+ → ties riba, pasitikslinti Šiaulių r. savivaldybėje
+- Žiedo brėžinys: `ziedas-brezinys.png` (išorė 101, vidus ≈91,4 su 10 cm pločiu, anga ≈200 cm nuo kampo iki priešingos kraštinės, per kampus ≈227, galai 25,7°, kampas 128,6°)
