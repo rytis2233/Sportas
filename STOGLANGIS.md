@@ -62,3 +62,17 @@ Tyrimo ataskaita: `reports/Šešiakampis polikarbonato stoglangis.md`
 ## Apkrovos
 - Sniegas LT: s_k 1,2 (I zona) / 1,6 kN/m² (II zona), μ1 = 0,6 → 0,72 / 0,96 kN/m² ant stogo
 - Tarpinių gegnių nereikia (didžiausias tarpatramis ~1,01 m)
+
+---
+
+# BOKŠTELIS (pasirinktas variantas) ant septynkampio žiedo
+Vizualizacija: `bokstelis-3d.png`
+
+- Žiedas: 7 × 101 cm (išorė), perimetras 7,07 m, skersmuo 2,10 m (plokštumos) / 2,33 m (kampai)
+- **Stulpeliai: 7 vnt. 70×70 mm** (geriausia klijuotas tašas), ~0,8 m, kampuose nusklembti pagal 128,6° (pjūviai 25,7°)
+  - galuose plieniniai kampuočiai / plokštelės; langų rėmai tvirtai prisukti – standina nuo vėjo
+  - 7 stulpelių svoris ~13 kg
+- Langai: 7 vnt. ~90 × 50 cm (2 stiklų paketas ~65 kg; 1 stiklas ~30 kg), 1–2 atidaromi
+- Stogelis: septynkampė piramidė, 30–45°, užlaida ~20 cm, bitumo čerpės kaip namo
+- Bokštelio svoris ~350–400 kg; su sniegu žiedui iki ~0,7–1 t
+- Prieš statant – konstruktoriaus apžiūra (žiedas, jungtys, tvirtinimas)
