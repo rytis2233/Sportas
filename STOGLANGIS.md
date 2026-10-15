@@ -119,3 +119,12 @@ Prielaidos: gegnės 50×200 (patvirtinta vartotojo, C24/C18), murlotas r≈4,75 
 - Sandūros dar užpiltos daug poliuretaninių klijų: padeda šiek tiek, bet galas į galą (galinis pjūvis) + 2–3 mm tarpas su putotais klijais tempimui nepatikima → sustiprinimo rekomendacija lieka
 - Murlotas įleistas ~2 cm į stulpo viršų (lizdas) + kampuotis + varžtai + PU klijai: sija nenuslys nuo stulpo, sujungimas geresnis nei manyta; išilginiam tempimui (sijų galų traukimui vienas nuo kito) lizdas nepadeda → kryžminiai varžtai lieka kaip pigus draudimas, ne būtinybė
 - Sienose įstrižainės (nuo susisukimo), visas murloto ratas sujungtas ir apjuostas plieniniu trosu → tempimo žiedas YRA. Trosas ≥6 mm (nutr. ~20 kN) pakanka (reikia ~10 kN charakt., ~15 kN ULS), jei įtemptas ir užspaustas ≥3 spaustukais. Kryžminiai varžtai nebereikalingi. IŠVADA: stogas bokštelį atlaiko.
+
+## Gilaus tyrimo išvados (ataskaita: reports/Apvalaus namo stogo saugumas.md)
+- PATAISYMAS: anksčiau rašyta „trosas ≥6 mm pakanka“ – NETEISINGA. 6 mm netinka, 8 mm IWRC ant ribos (~70–80 %), 10 mm su atsarga (su bokšteliu rinktis 10 mm); ≥4 spaustukai (EN 13411-5), sertifikuotas įtempėjas, plieniniai balneliai 14 kampų, išankstinis įtempimas
+- PATAISYMAS: žiedo kraštinės ne tik gniuždomos, bet ir lenkiamos plane ~1,75 kNm (su bokšteliu ~2 kNm) – žiedas ~20 cm aukščio OK, ~10 cm per silpnas → išmatuoti žiedo aukštį; kampuose plieninės plokštelės
+- Patvirtinta: gegnės 61/81 %, H ~3,4 kN, murloto tempimas ~15 kN (su bokšteliu 17–18), stulpai su didele atsarga
+- Sniegas: I rajonas sk 1,2 (Šiaulių/Klaipėdos aps.), II – 1,6; μ 35–40° = 0,53–0,67 → mano prielaida atsargi; kritinis – vienpusis sniegas
+- Žuvininkai rasti Šiaulių r. (Ginkūnų sen.) – patikslinti vietą (pajūryje vėjas 32 m/s)
+- OSB 18 mm prie karnizo (tarpas 1,08 m) viršija 90 cm ribą
+- Bokštelis: vėjo apvertimas ≈ svorio momentui → kiekvieną stulpelį inkaruoti; greičiausiai rekonstravimas → projektas/leidimas, SSVA atestuotas konstruktorius
