@@ -139,3 +139,8 @@ Prielaidos: gegnės 50×200 (patvirtinta vartotojo, C24/C18), murlotas r≈4,75 
   - Gegnės C16 ~75 %, žiedas C16 su bokšteliu ~60–70 %
   - Leidimai: kaimas rajone (ne miestas); jei pastatas ≤80 m² ir ≤8,5 m – nesudėtingas II gr.; bokštelis su smaigaliu ~8,3 m+ → ties riba, pasitikslinti Šiaulių r. savivaldybėje
 - Žiedo brėžinys: `ziedas-brezinys.png` (išorė 101, vidus ≈91,4 su 10 cm pločiu, anga ≈200 cm nuo kampo iki priešingos kraštinės, per kampus ≈227, galai 25,7°, kampas 128,6°)
+- STOGO NUOLYDIS 33° (vartotojo duomuo). Perskaičiuota (su bokšteliu, Šiaulių r. sniegas sk 1,2 × μ 0,72 = 0,86 kN/m²):
+  - pakilimas murlotas→žiedas ~2,4 m, gegnė ~4,4 m; jei iki žiedo 6 m → sienos ~3,6 m
+  - gegnės: C24 50 %, C18 66 %, C16 (48×195) 78 %; įlinkis ~10–12 mm
+  - H ~3,4 kN, murloto tempimas ~15 kN ULS → trosas min. 8 mm IWRC (~75 %), 10 mm – su atsarga; 6 mm netinka
+  - žiedas 10×20 C16: lenkimas ~1,73 kNm → ~60 % OK; stulpui ~13 kN
