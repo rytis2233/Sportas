@@ -109,3 +109,5 @@ Prielaidos: gegnės 50×200 (patvirtinta vartotojo, C24/C18), murlotas r≈4,75 
 - Žiedo gniuždymas ~15 kN; kiekvieną žiedo kraštinę spaudžia 4 gegnės (~14 kN) → lenkimas ~1,7 kNm, ~9×20 cm+ žiedas OK
 - Stovas ~17 kN ULS (~1,2 t charakt.): 50×200 gerai tik jei silpnoji kryptis prilaikyta sienos užpildu; laisvas ~10 kN – per silpnas
 - Murlotas tarp stovų (2,1 m, gegnė per vidurį): 50×200 ant briaunos ~90 % – ribinis; geriau gegnes virš stovų arba dvigubas murlotas
+- Nuotrauka (2024-09-22, statyba): karkasas – stambūs kvadratiniai stulpai (~15–20 × 15–20) su įstrižais spyriais, murlotas – stambios sijos (14 kampų daugiakampis ant stulpų), gegnės 5×20 radialiai į žiedą; statant buvo laikinas centrinis bokštas
+- Išvada: stulpai (~1,2 t kiekvienam) ir murlotas tarp stulpų – su didele atsarga; liko patikrinti tik murloto sujungimus virš stulpų (tempimas ~1,5 t) ir gegnių tvirtinimą prie murloto/žiedo
