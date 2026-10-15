@@ -117,3 +117,4 @@ Prielaidos: gegnės 50×200 (patvirtinta vartotojo, C24/C18), murlotas r≈4,75 
 - Vertinimas: savo svoriui (~0,35 t tempimas) užtenka (stovi nuo 2024 be problemų); gausiam sniegui (~1–1,5 t) varžtai į stulpo galą – ant ribos/nepatikima
 - Rekomendacija (pigu, 14 sujungimų): per kiekvieną sujungimą iš vidaus pusės 2 pilno sriegio varžtai 8×300 kryžmai per sandūrą ARBA lenkta plieninė plokštelė 2–3 mm ~100×400 su ~10 inkarinių vinių/varžtų kiekvienoje pusėje; patikrinti tarpus sujungimuose po žiemos
 - Sandūros dar užpiltos daug poliuretaninių klijų: padeda šiek tiek, bet galas į galą (galinis pjūvis) + 2–3 mm tarpas su putotais klijais tempimui nepatikima → sustiprinimo rekomendacija lieka
+- Murlotas įleistas ~2 cm į stulpo viršų (lizdas) + kampuotis + varžtai + PU klijai: sija nenuslys nuo stulpo, sujungimas geresnis nei manyta; išilginiam tempimui (sijų galų traukimui vienas nuo kito) lizdas nepadeda → kryžminiai varžtai lieka kaip pigus draudimas, ne būtinybė
