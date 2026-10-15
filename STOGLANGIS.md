@@ -132,3 +132,9 @@ Prielaidos: gegnės 50×200 (patvirtinta vartotojo, C24/C18), murlotas r≈4,75 
 - Mediena: pirkta šlapia tiesiai iš lentpjūvės, išdžiūvo vietoje → nerūšiuota, skaičiuoti kaip C16. Gegnės C16 su sudžiūvusiu ~48×195: ~97 % su mano atsargiu sniegu, ~75 % su normos sniegu (I rajonas) → tinka; žiedas C16 ~70 % su bokšteliu. Dėl džiūvimo: patikrinti/perveržti trosą, varžtus, vinis, kampuočius; stebėti gegnių įlinkį (valkšnumas).
 - Gegnės įleistos į murloto išpjovas (+ dabar kampuočiai iš abiejų pusių): horizontalią jėgą (~3,4 kN) perima atrėmimas į išpjovos sienelę – geriausias sprendimas. Išpjova ≤ ~5 cm (1/4 murloto): murloto išnaudojimas net C16 ≤ ~60 %. Gegnėse matomos tik smulkios šakos.
 - Išpjovos murlote ~5 cm (patvirtinta) → murlotas OK. Liko tik troso storis (≥8 mm, su bokšteliu 10 mm), OSB storis, tiksli vieta.
+- VIETA PATVIRTINTA: Liepų g., Žuvininkai, Šiaulių r. (Ginkūnų sen., prie Švedės tvenkinio)
+  - Sniegas I rajonas sk 1,2; μ(~38,7°)≈0,57 → ~0,69 kN/m² plane (mano prielaida 1,2 – ~75 % per didelė, atsarga)
+  - Vėjas vb,0 24 m/s, atvira vieta (tvenkinys, laukai) → qp ~0,7–0,8 kPa 6–8 m aukštyje (ne pajūris)
+  - Su normos sniegu: murloto tempimas ~11 kN ULS (+bokštelis ~12–13 kN) → trosas ≥8 mm IWRC pakanka (~60 %), 6 mm – ne; 10 mm nebūtinas
+  - Gegnės C16 ~75 %, žiedas C16 su bokšteliu ~60–70 %
+  - Leidimai: kaimas rajone (ne miestas); jei pastatas ≤80 m² ir ≤8,5 m – nesudėtingas II gr.; bokštelis su smaigaliu ~8,3 m+ → ties riba, pasitikslinti Šiaulių r. savivaldybėje
