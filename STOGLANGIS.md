@@ -128,3 +128,4 @@ Prielaidos: gegnės 50×200 (patvirtinta vartotojo, C24/C18), murlotas r≈4,75 
 - Žuvininkai rasti Šiaulių r. (Ginkūnų sen.) – patikslinti vietą (pajūryje vėjas 32 m/s)
 - OSB 18 mm prie karnizo (tarpas 1,08 m) viršija 90 cm ribą
 - Bokštelis: vėjo apvertimas ≈ svorio momentui → kiekvieną stulpelį inkaruoti; greičiausiai rekonstravimas → projektas/leidimas, SSVA atestuotas konstruktorius
+- Žiedas išmatuotas: 10 cm plotis × 20 cm aukštis, kampai ir gegnės apjuosti perforuotomis plieno juostomis (nuotr. 2024-10-02). Lenkimas plane M≈0,505·H·L: 1,75 kNm (be bokštelio) / 2,0 kNm (su), W=333 cm³ → σm 5,3/6,0 MPa; N≈15–17 kN → σc 0,85 MPa; kc≈0,93. Išnaudojimas su bokšteliu: C24 ~48 %, C18 ~62 %, C16 ~70 % → ŽIEDAS TINKA. Liko: troso storis, OSB storis, tiksli vieta.
