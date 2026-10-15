@@ -99,3 +99,13 @@ Vaizdai: `bokstelis-konstrukcija-3d.png`, `bokstelis-brezinys.png`
 ## Namo (didžiojo pastato) matmenys
 - Vidinis plotas 63 m² (apvalus) → vidinis skersmuo ~8,96 m, vidinis perimetras ~28,1 m
 - Išorinis skersmuo priklauso nuo sienų storio: 40 cm → ~9,76 m (perim. ~30,7 m); 50 cm → ~9,96 m (perim. ~31,3 m)
+
+## Stogo laikomoji galia (apytikslis skaičiavimas, ne projektas)
+Duota: 28 gegnės 20 cm, 14 stovų 20 cm, murlotas 20 cm, be centrinės kolonos, namo aukštis 6 m.
+Prielaidos: gegnės 50×200 (C24/C18), murlotas r≈4,75 m, žiedas r≈1,05 m, užlaida 0,6 m, sienos ~3 m → nuolydis ~39°, gegnė ~4,8 m; stogo plotas plane ~86 m²; stogo svoris 0,45 kN/m² (~5 t); sniegas sk 1,5 × μ 0,8 = 1,2 kN/m² (~10,5 t); bokštelis 3,8 kN + sniegas.
+- Gegnė ULS: V 8,4 kN, H 3,4 kN, M 2,6 kNm → išnaudojimas C24 61 %, C18 81 %; įlinkis ~12 mm (L/410)
+- Maks. sniegas (charakt., plane) 50×200: C24 ~230 kg/m², C18 ~165 kg/m² (75×200: 380/275; 100×200: 520/380)
+- Murloto žiedinis tempimas ~15 kN (ULS) → sujungimai turi laikyti tempimą (užleidimai + varžtai / plieninės juostos)
+- Žiedo gniuždymas ~15 kN; kiekvieną žiedo kraštinę spaudžia 4 gegnės (~14 kN) → lenkimas ~1,7 kNm, ~9×20 cm+ žiedas OK
+- Stovas ~17 kN ULS (~1,2 t charakt.): 50×200 gerai tik jei silpnoji kryptis prilaikyta sienos užpildu; laisvas ~10 kN – per silpnas
+- Murlotas tarp stovų (2,1 m, gegnė per vidurį): 50×200 ant briaunos ~90 % – ribinis; geriau gegnes virš stovų arba dvigubas murlotas
