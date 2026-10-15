@@ -144,3 +144,6 @@ Prielaidos: gegnės 50×200 (patvirtinta vartotojo, C24/C18), murlotas r≈4,75 
   - gegnės: C24 50 %, C18 66 %, C16 (48×195) 78 %; įlinkis ~10–12 mm
   - H ~3,4 kN, murloto tempimas ~15 kN ULS → trosas min. 8 mm IWRC (~75 %), 10 mm – su atsarga; 6 mm netinka
   - žiedas 10×20 C16: lenkimas ~1,73 kNm → ~60 % OK; stulpui ~13 kN
+
+## Viršaus variantai
+Vaizdas: `virsaus-variantai.png` – 1 bokštelis su langais (~380 kg), 2 stiklinė piramidė (~150–220 kg), 3 akrilinis kupolas (~60–100 kg), 4 svogūno formos (~450–550 kg), 5 aukštas su smaile 60° (~450 kg), 6 vėdinimo žibintas su žaliuzėmis (~250 kg)
