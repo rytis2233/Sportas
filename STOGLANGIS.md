@@ -76,3 +76,13 @@ Vizualizacija: `bokstelis-3d.png`
 - Stogelis: septynkampė piramidė, 30–45°, užlaida ~20 cm, bitumo čerpės kaip namo
 - Bokštelio svoris ~350–400 kg; su sniegu žiedui iki ~0,7–1 t
 - Prieš statant – konstruktoriaus apžiūra (žiedas, jungtys, tvirtinimas)
+
+## Bokštelio konstrukcija (detaliai)
+Vaizdai: `bokstelis-konstrukcija-3d.png`, `bokstelis-brezinys.png`
+- Aukščiai nuo žiedo viršaus: padas 0–4,5; apatinė juosta/apšiltinimas iki 22,5; palangės skersinis 22,5–27; langai 27–77; viršutinis rėmas 77–81,5; stogelio apkala ties siena 90; viršūnė ~178; smaigalys ~226
+- Apatinė juosta (lenta 20 mm + 5 cm apšiltinimas) pakeičia paaukštinimą: danga + skarda ≥ 15 cm
+- Padas ir viršutinis rėmas 45×95: 14 dalių, išorė 101, vidus 91,9, galai 25,7°
+- Palangės skersiniai 45×95: 7 × ~87 cm; langai 7 × 85 × 48 (anga ~87 × 50)
+- Stogelis 40°, užlaida 15: 7 briaunų gegnės 45×120 ~157 cm, nuolydis 37,1°, nusklembimas 16,2°; mazgas septynkampis 16/20
+- Apkala ~6,4 m² (7 trikampiai 115,4 × 156,5), čerpės ~7 m²
+- Svoris ~380 kg (300–450), sniegas ~320–420 kg
