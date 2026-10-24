@@ -123,3 +123,9 @@ Brėžinys: `durys-brezinys.png`. Ataskaita: `reports/Medinės dvivėrės lauko 
 - Montavimo priemonės Mynest: tik „Varžtai ir pragręžtos skylės 7,5×132 mm“ (+24,39 €, su dangteliais) → IMTI. Varžtai tinka į medinį angos rėmą (įlenda ~4–5 cm į medį); į molį netinka. Atskirai pirkti: lauko hidroizoliacinę (difuzinę) juostą, vidaus garų izoliacinę juostą, mažo plėtimosi montavimo putas, plastikines atramines kaladėles 3–10 mm (~50–80 €).
 - Saugus stiklas: rinktis „Laminuotas iš vidaus, grūdintas iš lauko“ (+199,09 €) – geriausias kainos ir saugumo santykis (lauko grūdintas atlaiko smūgius/karštį, vidaus laminuotas laiko šukes ir įsilaužėlį). Alternatyva: abiejų pusių laminuotas (+235,94 €). Netinka: tik grūdintas iš vidaus; abiejų pusių grūdintas (sudužus atsiveria anga).
 - Vartotojo sprendimas: saugaus stiklo NEDĖS (paprastas 3 stiklų paketas). Rizikos: aštrios šukės sudužus, įskilimas nuo karščio prie tamsaus rėmo, nėra apsaugos nuo įsilaužimo. Vėlesnė pigi alternatyva: apsauginė plėvelė ant vidinio stiklo (~20–40 €/m²).
+
+## 8. Vienvėrės stiklinės lauko durys – Mynest užsakymo matmenys
+- Turimas duomuo: 100 × 215 cm (anksčiau užrašyta kaip rėmas; tikėtina, kad tai anga – patikslinti)
+- Jei ANGA 1000 × 2150 nuo išlyginto pagrindo (plytelė+klijai ~15 mm): užsakyti **960 × 2105 mm** (plotis −40, aukštis −15 −30)
+- Jei tai jau durų rėmas 1000 × 2150: anga turi būti ~1040 × 2195
+- Tie patys nustatymai kaip dvivėrėms: šiltas rėmelis, saugus stiklas (rekomenduojama), daugiataškė spyna, 20 mm Al slenkstis, varžtai su pragręžtomis skylėmis, spalva lauke 55 Eiche Dunkel / vidus balta
