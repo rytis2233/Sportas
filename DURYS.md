@@ -96,3 +96,12 @@ Brėžinys: `durys-brezinys.png`. Ataskaita: `reports/Medinės dvivėrės lauko 
 - Klotai: atraminiai apačioje vyrių pusėje ir viršuje spynos pusėje (įstrižai), 5–10 cm nuo kampų
 - Prieš stiklą: įstrižainės vienodos ±1 mm; po stiklo: patikrinti, ar spynos kampas nenusileidžia
 - Vyriai: 3 ritininiai 3D, ≥ 160 kg poros apkrova; varžtai į kietą medieną
+
+## 7. Mynest.lt PVC dvivėrės lauko durys (1/1, su stiklu) – 1 022,48 €
+- Klausimas: ar apačiai reikia medinės staktos / atramos, ar užtenka putų
+- Atsakymas: apačios NEGALIMA tik užputoti – putos nelaiko svorio ir sugeria vandenį. Reikia tvirtos lygios atramos:
+  - geriausia pakėlimo (pamatinis) profilis 30–50 mm iš drėgmei atsparios medžiagos (PVC/kompozitas, pvz. Purenit/Compacfoam tipo), dažnai užsakomas kartu su durimis
+  - galima impregnuota kietmedžio (ąžuolo/maumedžio) lenta ant hidroizoliacijos, bet prie grindų drėgsta – blogesnis variantas
+  - atraminės kaladėlės po rėmu ties vyriais, viduriniu statramsčiu ir kampais
+  - lauke – hidroizoliacinė juosta, viduje – garų izoliacinė juosta; putos tik šonuose ir viršuje
+- Aukštis: jei anga 200 cm ir pakėlimo profilis 3 cm, durų rėmas ~195 cm (200 − 3 − 1,5–2 montavimo tarpas)
