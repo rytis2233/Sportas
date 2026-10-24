@@ -114,3 +114,5 @@ Brėžinys: `durys-brezinys.png`. Ataskaita: `reports/Medinės dvivėrės lauko 
 - Mynest matavimo instrukcija (YouTube „Naujos durų angos matavimo instrukcija“): užsakomas aukštis = mažiausias angos aukštis nuo pamato − planuojamas grindų aukštis − 30 mm montavimo tarpas (pvz. 2420 − 200 − 30 = 2190)
   - Mano atveju: 2000 − ~15 (plytelė + klijai) − 30 = ~1955 mm aukščio. Po rėmu ~15 mm atrama (kaladėlės/juosta) = plytelių aukštis → slenkstis lygus su plytelėmis
   - Plotis: ~1770 mm (180 − 3 cm); pasitikslinti su Mynest jų pločio taisyklę
+- Mynest pločio taisyklė: užsakomas plotis = mažiausias angos plotis − 40 mm → 1800 − 40 = **1760 mm**
+- GALUTINIS UŽSAKYMAS (Mynest dvivėrės PVC, anga 1800 × 2000 nuo išlyginto pagrindo, plytelė+klijai ~15 mm): **1760 × ~1955 mm** (patikslinti po 3 vietų matavimo)
