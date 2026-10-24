@@ -129,3 +129,4 @@ Brėžinys: `durys-brezinys.png`. Ataskaita: `reports/Medinės dvivėrės lauko 
 - Jei ANGA 1000 × 2150 nuo išlyginto pagrindo (plytelė+klijai ~15 mm): užsakyti **960 × 2105 mm** (plotis −40, aukštis −15 −30)
 - Jei tai jau durų rėmas 1000 × 2150: anga turi būti ~1040 × 2195
 - Tie patys nustatymai kaip dvivėrėms: šiltas rėmelis, saugus stiklas (rekomenduojama), daugiataškė spyna, 20 mm Al slenkstis, varžtai su pragręžtomis skylėmis, spalva lauke 55 Eiche Dunkel / vidus balta
+- Esamų langų rėmas (nuotr. 2024–2026): tamsiai ruda medžio rašto plėvelė su rausvu atspalviu, lipdukas „OKNA D…“ (lenkų gamintojas). Kodą rasti sąskaitoje/lipduke (Nussbaum/Orzech 2178-007? Eiche dunkel? Black Cherry?). Iš Mynest artimiausi: 55 Eiche Dunkel arba 68 Black Cherry – palyginti pavyzdžius dienos šviesoje. Pastaba: langų apsauginę plėvelę nuimti kuo greičiau; putas uždengti nuo UV.
