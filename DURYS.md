@@ -111,3 +111,6 @@ Brėžinys: `durys-brezinys.png`. Ataskaita: `reports/Medinės dvivėrės lauko 
   - Variantas A (rekomenduojamas): rėmas ant pagrindo su plastikinėmis atraminėmis kaladėlėmis (~5–10 mm) + hidroizoliacinė juosta po rėmu; slenkstis (~2 cm) iškils tik ~1 cm virš plytelių. Rėmo aukštis ~197 cm.
   - Variantas B: 20–30 mm pakėlimo profilis → slenkstis ~2,5–3,5 cm virš plytelių (laiptelis). Rėmo aukštis ~195–196 cm.
   - Plotis ~176–177 cm (180 − 2 × 1,5–2). Prieš užsakant išmatuoti angą 3 vietose, imti mažiausią.
+- Mynest matavimo instrukcija (YouTube „Naujos durų angos matavimo instrukcija“): užsakomas aukštis = mažiausias angos aukštis nuo pamato − planuojamas grindų aukštis − 30 mm montavimo tarpas (pvz. 2420 − 200 − 30 = 2190)
+  - Mano atveju: 2000 − ~15 (plytelė + klijai) − 30 = ~1955 mm aukščio. Po rėmu ~15 mm atrama (kaladėlės/juosta) = plytelių aukštis → slenkstis lygus su plytelėmis
+  - Plotis: ~1770 mm (180 − 3 cm); pasitikslinti su Mynest jų pločio taisyklę
