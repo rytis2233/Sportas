@@ -105,3 +105,5 @@ Brėžinys: `durys-brezinys.png`. Ataskaita: `reports/Medinės dvivėrės lauko 
   - atraminės kaladėlės po rėmu ties vyriais, viduriniu statramsčiu ir kampais
   - lauke – hidroizoliacinė juosta, viduje – garų izoliacinė juosta; putos tik šonuose ir viršuje
 - Aukštis: jei anga 200 cm ir pakėlimo profilis 3 cm, durų rėmas ~195 cm (200 − 3 − 1,5–2 montavimo tarpas)
+- Plytelės: po durimis NEDĖTI. Durys statomos ant tvirto pagrindo (perdanga/pamatas) su pakėlimo profiliu, kurio aukštis = grindų sluoksniai (išlyginamasis + klijai + plytelė), kad slenkstis būtų grindų lygyje (≤ 2 cm virš plytelių). Plytelės klojamos iki profilio, tarpas – elastingu silikonu (ne glaistu). Lauke – nuolydis nuo durų.
+- SVARBU: jei 200 cm aukštis matuotas nuo dabartinio betono (po grindų šildymu), galutinės grindys pakels ~5–10 cm → durų aukštis mažės. Patikslinti, nuo kur matuota.
