@@ -116,3 +116,4 @@ Brėžinys: `durys-brezinys.png`. Ataskaita: `reports/Medinės dvivėrės lauko 
   - Plotis: ~1770 mm (180 − 3 cm); pasitikslinti su Mynest jų pločio taisyklę
 - Mynest pločio taisyklė: užsakomas plotis = mažiausias angos plotis − 40 mm → 1800 − 40 = **1760 mm**
 - GALUTINIS UŽSAKYMAS (Mynest dvivėrės PVC, anga 1800 × 2000 nuo išlyginto pagrindo, plytelė+klijai ~15 mm): **1760 × ~1955 mm** (patikslinti po 3 vietų matavimo)
+- Mynest konfigūratoriuje įvesta 1760 × 1955 mm → 1 115,26 € (2026-10-24). Dar patikrinti „Redaguoti visus parametrus“: saugus stiklas (laminuotas/grūdintas), 3 stiklų paketas, žemas slenkstis, atidarymo kryptis ir aktyvi varčia, daugiataškė spyna, spalva (laminatas), pakėlimo profilis – nebūtinas
