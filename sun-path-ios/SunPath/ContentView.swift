@@ -257,53 +257,88 @@ struct Pill: View {
 struct BottomBar: View {
     @ObservedObject var m: AppModel
     var body: some View {
-        ZStack {
+        VStack(spacing: 14) {
+            BodySwitch(m: m)
             HStack(spacing: 12) {
                 GlassButton(icon: "info") { m.sheet = .about }
                 GlassButton(icon: "camera") { m.takePhoto() }
                 Spacer()
                 GlassButton(icon: "line.3.horizontal", size: 58) { m.menuOpen = true }
             }
-            BodySwitch(m: m)
         }
         .padding(.horizontal, 20)
         .padding(.bottom, 6)
     }
 }
 
-/// Sun / Moon switch on the main screen, with a sliding highlight.
+/// Premium Sun / Moon switch: a glossy, glowing knob slides between the two.
 struct BodySwitch: View {
     @ObservedObject var m: AppModel
     @Namespace private var ns
+
     var body: some View {
         HStack(spacing: 0) {
-            segment("sun.max.fill", .sun, SunColor)
-            segment("moon.fill", .moon, MoonColor)
+            segment(.sun)
+            segment(.moon)
         }
-        .padding(4)
-        .glass(Capsule())
+        .padding(5)
+        .background(
+            ZStack {
+                Capsule().fill(.ultraThinMaterial)
+                Capsule().fill(LinearGradient(colors: [Color.white.opacity(0.10), Color.black.opacity(0.30)],
+                                              startPoint: .top, endPoint: .bottom))
+                Capsule().strokeBorder(LinearGradient(colors: [Color.white.opacity(0.38), Color.white.opacity(0.06)],
+                                                      startPoint: .top, endPoint: .bottom), lineWidth: 1)
+            }
+        )
+        .shadow(color: .black.opacity(0.4), radius: 16, x: 0, y: 8)
     }
-    private func segment(_ icon: String, _ b: SkyBody, _ color: Color) -> some View {
+
+    private func segment(_ b: SkyBody) -> some View {
         let on = m.target == b
+        let sun = b == .sun
+        let ink = sun ? Color(red: 0.36, green: 0.21, blue: 0.0) : Color(red: 0.12, green: 0.15, blue: 0.25)
         return Button {
             Haptics.select()
-            withAnimation(.spring(response: 0.32, dampingFraction: 0.78)) { m.setTarget(b) }
+            withAnimation(.spring(response: 0.36, dampingFraction: 0.74)) { m.setTarget(b) }
         } label: {
-            ZStack {
-                if on {
-                    Capsule()
-                        .fill(LinearGradient(colors: [Color.white.opacity(0.95), color], startPoint: .top, endPoint: .bottom))
-                        .matchedGeometryEffect(id: "selection", in: ns)
-                }
-                Image(systemName: icon)
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundColor(on ? .black : .white.opacity(0.8))
+            HStack(spacing: 7) {
+                Image(systemName: sun ? "sun.max.fill" : "moon.stars.fill")
+                    .font(.system(size: 16, weight: .bold))
+                Text(L.t(sun ? "sun" : "moon"))
+                    .font(rounded(15, .bold))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
             }
-            .frame(width: 50, height: 42)
+            .foregroundColor(on ? ink : .white.opacity(0.72))
+            .frame(width: 106, height: 42)
+            .background {
+                if on { knob(sun).matchedGeometryEffect(id: "knob", in: ns) }
+            }
             .contentShape(Capsule())
         }
-        .buttonStyle(.plain)
-        .accessibilityLabel(L.t(b == .sun ? "sun" : "moon"))
+        .buttonStyle(PressStyle())
+        .accessibilityLabel(L.t(sun ? "sun" : "moon"))
+        .accessibilityAddTraits(on ? .isSelected : [])
+    }
+
+    /// Glossy knob: colour gradient, top highlight, hairline rim and a coloured glow.
+    private func knob(_ sun: Bool) -> some View {
+        let colors: [Color] = sun
+            ? [SunLight, SunColor, SunDeep]
+            : [Color.white, MoonColor, Color(red: 0.62, green: 0.68, blue: 0.80)]
+        let glow = sun ? SunColor : MoonColor
+        return Capsule()
+            .fill(LinearGradient(colors: colors, startPoint: .top, endPoint: .bottom))
+            .overlay(alignment: .top) {
+                Capsule()
+                    .fill(LinearGradient(colors: [Color.white.opacity(0.65), Color.white.opacity(0)], startPoint: .top, endPoint: .bottom))
+                    .frame(height: 18)
+                    .padding(.horizontal, 8)
+                    .padding(.top, 2)
+            }
+            .overlay(Capsule().strokeBorder(Color.white.opacity(0.55), lineWidth: 1))
+            .shadow(color: glow.opacity(0.7), radius: 12, x: 0, y: 2)
     }
 }
 

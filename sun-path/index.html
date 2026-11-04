@@ -73,12 +73,28 @@ input { font: inherit; }
 .round.big { width: 58px; height: 58px; }
 .round svg { width: 22px; height: 22px; }
 .round.big svg { width: 24px; height: 24px; }
-.switch { pointer-events: auto; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); display: flex; padding: 4px; border-radius: 999px; }
-.switch button { position: relative; z-index: 1; width: 50px; height: 42px; border-radius: 999px; display: grid; place-items: center; color: rgba(255,255,255,.8); transition: color .25s; }
-.switch button svg { width: 19px; height: 19px; }
-.switch .knob { position: absolute; top: 4px; left: 4px; width: 50px; height: 42px; border-radius: 999px; background: linear-gradient(#fff, var(--sun)); transition: transform .32s cubic-bezier(.3,1.4,.5,1), background .25s; }
-.switch[data-on="moon"] .knob { transform: translateX(50px); background: linear-gradient(#fff, var(--moon)); }
-.switch[data-on="sun"] [data-b="sun"], .switch[data-on="moon"] [data-b="moon"] { color: #000; }
+/* Premium Sun / Moon switch: glossy, glowing knob above the bottom buttons */
+.switch { pointer-events: auto; position: absolute; left: 50%; top: -62px; transform: translateX(-50%); display: flex; padding: 5px; border-radius: 999px;
+  background: linear-gradient(rgba(255,255,255,.10), rgba(0,0,0,.30)), rgba(38,40,46,.42);
+  -webkit-backdrop-filter: blur(22px) saturate(1.6); backdrop-filter: blur(22px) saturate(1.6);
+  border: 1px solid rgba(255,255,255,.22); border-bottom-color: rgba(255,255,255,.06);
+  box-shadow: 0 8px 28px rgba(0,0,0,.45); }
+.switch button { position: relative; z-index: 1; width: 106px; height: 42px; border-radius: 999px; display: flex; align-items: center; justify-content: center; gap: 7px;
+  color: rgba(255,255,255,.72); font-size: 15px; font-weight: 700; transition: color .3s, transform .12s; }
+.switch button:active { transform: scale(.95); }
+.switch button svg { width: 17px; height: 17px; flex: none; }
+.switch .knob { position: absolute; top: 5px; left: 5px; width: 106px; height: 42px; border-radius: 999px;
+  background: linear-gradient(var(--sun-light), var(--sun) 55%, var(--sun-deep));
+  border: 1px solid rgba(255,255,255,.55);
+  box-shadow: 0 2px 16px rgba(255,199,41,.65), inset 0 -2px 6px rgba(160,80,0,.25);
+  transition: transform .42s cubic-bezier(.3,1.35,.45,1), background .35s, box-shadow .35s; }
+.switch .knob::after { content: ""; position: absolute; left: 8px; right: 8px; top: 2px; height: 17px; border-radius: 999px;
+  background: linear-gradient(rgba(255,255,255,.65), rgba(255,255,255,0)); }
+.switch[data-on="moon"] .knob { transform: translateX(106px);
+  background: linear-gradient(#FFFFFF, var(--moon) 55%, #9EADCC);
+  box-shadow: 0 2px 16px rgba(219,230,247,.6), inset 0 -2px 6px rgba(40,60,100,.25); }
+.switch[data-on="sun"] [data-b="sun"] { color: #5C3600; }
+.switch[data-on="moon"] [data-b="moon"] { color: #1F2640; }
 
 /* Action sheet menu */
 .scrim { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.4); display: flex; align-items: flex-end; justify-content: center; padding: 0 14px calc(var(--safe-b) + 10px); z-index: 20; animation: fade .2s ease; }
@@ -202,8 +218,8 @@ input[type=date] { height: 34px; border-radius: 999px; border: 0; background: va
   </button>
   <div class="switch glass" id="bodySwitch" data-on="sun">
     <span class="knob"></span>
-    <button data-b="sun" aria-label="Sun"><svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="12" r="4.6" stroke="none"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8"/></svg></button>
-    <button data-b="moon" aria-label="Moon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z"/></svg></button>
+    <button data-b="sun" aria-label="Sun"><svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="12" r="4.6" stroke="none"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8"/></svg><span data-i18n="sun"></span></button>
+    <button data-b="moon" aria-label="Moon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z"/><path d="M17.5 3l.6 1.4 1.4.6-1.4.6-.6 1.4-.6-1.4-1.4-.6 1.4-.6zM21 8l.4.9.9.4-.9.4-.4.9-.4-.9-.9-.4.9-.4z"/></svg><span data-i18n="moon"></span></button>
   </div>
 </div>
 
