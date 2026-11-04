@@ -4,6 +4,7 @@ let SunColor = Color(red: 1.0, green: 0.76, blue: 0.055)
 let CompareColor = Color(red: 0.31, green: 0.76, blue: 0.97)
 let JuneColor = Color(red: 1.0, green: 0.54, blue: 0.31)
 let DecemberColor = Color(red: 0.51, green: 0.69, blue: 1.0)
+let MoonColor = Color(red: 0.84, green: 0.88, blue: 0.94)
 
 /// Draws the sky overlay: horizon, compass, altitude scale, sun paths and the sun.
 struct OverlayDrawer {
@@ -14,7 +15,9 @@ struct OverlayDrawer {
     func draw(_ ctx: GraphicsContext) {
         let cd = AppModel.cameraDirection(p.cam)
         if !m.cameraOn { drawGround(ctx, cd.az, cd.alt) }
-        if m.solstice {
+        let moon = m.target == .moon
+        let pathColor = moon ? MoonColor : SunColor
+        if m.solstice && !moon {
             let s = m.seasons(Calendar.current.component(.year, from: when))
             drawDay(ctx, m.dayPath(s[1]), JuneColor, width: 3, dashAlpha: 0.5, hours: false, events: false, label: L.shortDate(s[1]))
             drawDay(ctx, m.dayPath(s[3]), DecemberColor, width: 3, dashAlpha: 0.5, hours: false, events: false, label: L.shortDate(s[3]))
@@ -22,11 +25,15 @@ struct OverlayDrawer {
         }
         drawHorizon(ctx, cd.az)
         if let c = m.compare {
-            drawDay(ctx, m.dayPath(c), CompareColor, width: 4, dashAlpha: 0.8, hours: true, events: true, label: L.shortDate(c))
+            drawDay(ctx, m.dayPath(c, m.target), CompareColor, width: 4, dashAlpha: 0.8, hours: true, events: true, label: L.shortDate(c))
         }
-        drawDay(ctx, m.dayPath(when), SunColor, width: 5, dashAlpha: 0.8, hours: true, events: true,
+        drawDay(ctx, m.dayPath(when, m.target), pathColor, width: 5, dashAlpha: 0.8, hours: true, events: true,
                 label: m.compare != nil ? L.shortDate(when) : nil)
-        drawSun(ctx, Astro.sunPosition(when, m.obs))
+        if moon {
+            drawMoon(ctx, Astro.moonPosition(when, m.obs), Astro.sunPosition(when, m.obs))
+        } else {
+            drawSun(ctx, Astro.sunPosition(when, m.obs))
+        }
         drawCrosshair(ctx, strong: m.panel == .calibrate)
     }
 
@@ -224,7 +231,12 @@ struct OverlayDrawer {
             }
             return
         }
-        // off screen: arrow at the edge pointing to the sun
+        drawEdgeArrow(ctx, pos, SunColor)
+    }
+
+    /// Off screen: a marker at the edge with an arrow pointing to the body.
+    private func drawEdgeArrow(_ ctx: GraphicsContext, _ pos: Astro.SunPos, _ color: Color) {
+        let below = pos.alt < -0.83
         let d = M3.applyT(p.cam, M3.worldVec(pos.az, pos.alt))
         var dx = d[0], dy = -d[1]
         if hypot(dx, dy) < 1e-6 { dx = 1 }
@@ -240,13 +252,56 @@ struct OverlayDrawer {
         var c = ctx
         c.opacity = below ? 0.55 : 0.95
         c.addFilter(.shadow(color: .black.opacity(0.5), radius: 3))
-        c.fill(Path(ellipseIn: CGRect(x: x - 11, y: y - 11, width: 22, height: 22)), with: .color(SunColor))
+        c.fill(Path(ellipseIn: CGRect(x: x - 11, y: y - 11, width: 22, height: 22)), with: .color(color))
         var tri = Path()
         tri.move(to: rot(30, 0))
         tri.addLine(to: rot(17, -9))
         tri.addLine(to: rot(17, 9))
         tri.closeSubpath()
-        c.fill(tri, with: .color(SunColor))
+        c.fill(tri, with: .color(color))
+    }
+
+    /// The Moon with its real phase; the lit side faces the Sun.
+    private func drawMoon(_ ctx: GraphicsContext, _ pos: Astro.SunPos, _ sun: Astro.SunPos) {
+        guard let s = p.project(pos.az, pos.alt), Double(s.x) > -60, Double(s.x) < p.w + 60, Double(s.y) > -60, Double(s.y) < p.h + 60 else {
+            drawEdgeArrow(ctx, pos, MoonColor)
+            return
+        }
+        let phase = Astro.moonPhase(when)
+        // direction from the Moon towards the Sun, in the camera image
+        let mc = M3.applyT(p.cam, M3.worldVec(pos.az, pos.alt))
+        let sc = M3.applyT(p.cam, M3.worldVec(sun.az, sun.alt))
+        let dot = mc[0] * sc[0] + mc[1] * sc[1] + mc[2] * sc[2]
+        let ux = sc[0] - dot * mc[0], uy = sc[1] - dot * mc[1]
+        let ang = atan2(-uy, ux)
+        let r = 22.0
+        let cx = Double(s.x), cy = Double(s.y)
+        var c = ctx
+        c.opacity = pos.alt < -0.83 ? 0.55 : 1
+        c.fill(Path(ellipseIn: CGRect(x: cx - r * 1.7, y: cy - r * 1.7, width: r * 3.4, height: r * 3.4)), with: .color(MoonColor.opacity(0.16)))
+        let disk = Path(ellipseIn: CGRect(x: cx - r, y: cy - r, width: 2 * r, height: 2 * r))
+        var c2 = c
+        c2.addFilter(.shadow(color: .black.opacity(0.4), radius: 4))
+        c2.fill(disk, with: .color(Color(red: 0.16, green: 0.18, blue: 0.22)))
+        // lit part: the half-disk towards the Sun plus/minus the terminator ellipse
+        let k = phase.illum
+        var lit: [CGPoint] = []
+        let n = 40
+        for i in 0...n {
+            let th = -Double.pi / 2 + Double.pi * Double(i) / Double(n)
+            lit.append(CGPoint(x: r * cos(th), y: r * sin(th)))
+        }
+        for i in 0...n {
+            let th = Double.pi / 2 - Double.pi * Double(i) / Double(n)
+            lit.append(CGPoint(x: -(2 * k - 1) * r * cos(th), y: r * sin(th)))
+        }
+        var litPath = Path()
+        litPath.addLines(lit.map { q in
+            CGPoint(x: cx + Double(q.x) * cos(ang) - Double(q.y) * sin(ang), y: cy + Double(q.x) * sin(ang) + Double(q.y) * cos(ang))
+        })
+        litPath.closeSubpath()
+        c.fill(litPath, with: .color(Color(red: 0.95, green: 0.96, blue: 0.93)))
+        c.stroke(disk, with: .color(.white.opacity(0.45)), lineWidth: 1)
     }
 
     private func drawCrosshair(_ ctx: GraphicsContext, strong: Bool) {

@@ -3,6 +3,7 @@ import UIKit
 import CoreLocation
 
 enum Panel { case travel, compare, calibrate }
+enum SkyBody: String { case sun, moon }
 enum SheetKind: String, Identifiable { case about, eclipses, language; var id: String { rawValue } }
 
 struct Loc: Codable, Equatable { var lat: Double; var lon: Double; var h: Double; var src: String }
@@ -43,6 +44,8 @@ final class AppModel: ObservableObject {
     @Published var loc: Loc { didSet { locationChanged() } }
     @Published var cal: Cal { didSet { if let d = try? JSONEncoder().encode(cal) { ud.set(d, forKey: "cal") } } }
     @Published var solstice: Bool { didSet { ud.set(solstice, forKey: "solstice") } }
+    /// Which body the overlay tracks.
+    @Published var target: SkyBody { didSet { ud.set(target.rawValue, forKey: "target") } }
     @Published var travel: Date? = nil
     @Published var compare: Date? = nil
     @Published var eclipse: Astro.Eclipse? = nil
@@ -74,6 +77,7 @@ final class AppModel: ObservableObject {
         else { loc = Loc(lat: 50, lon: max(-180, min(180, Double(TimeZone.current.secondsFromGMT()) / 240)), h: 0, src: "approx") }
         if let d = defaults.data(forKey: "cal"), let v = try? JSONDecoder().decode(Cal.self, from: d) { cal = v } else { cal = Cal() }
         solstice = defaults.bool(forKey: "solstice")
+        target = SkyBody(rawValue: defaults.string(forKey: "target") ?? "sun") ?? .sun
         motion.magneticDecl = Astro.magneticDeclination(loc.lat, loc.lon, Date())
         camera.onSun = { [weak self] p in self?.handleSun(p) }
         locSvc.onLocation = { [weak self] l in self?.gotLocation(l) }
@@ -85,6 +89,9 @@ final class AppModel: ObservableObject {
     }
 
     var obs: Astro.Observer { Astro.Observer(lat: loc.lat, lon: loc.lon, h: loc.h) }
+    func position(_ d: Date, _ b: SkyBody) -> Astro.SunPos {
+        b == .sun ? Astro.sunPosition(d, obs) : Astro.moonPosition(d, obs)
+    }
     func now() -> Date { travel ?? Date() }
 
     // MARK: start-up
@@ -155,34 +162,34 @@ final class AppModel: ObservableObject {
 
     // MARK: sun paths
 
-    func dayPath(_ date: Date) -> DayPath {
+    func dayPath(_ date: Date, _ b: SkyBody = .sun) -> DayPath {
         let calr = Calendar.current
         let d0 = calr.startOfDay(for: date)
-        let key = "\(d0.timeIntervalSince1970)|\(loc.lat)|\(loc.lon)"
+        let key = "\(b.rawValue)|\(d0.timeIntervalSince1970)|\(loc.lat)|\(loc.lon)"
         if let c = pathCache[key] { return c }
         let o = obs
         let d1 = calr.date(byAdding: .day, value: 1, to: d0) ?? d0.addingTimeInterval(86400)
         var pts: [SkyPt] = []
         var t = d0.timeIntervalSince1970
         while t <= d1.timeIntervalSince1970 {
-            let p = Astro.sunPosition(t, o)
+            let p = b == .sun ? Astro.sunPosition(t, o) : Astro.moonPosition(t, o)
             pts.append(SkyPt(az: p.az, alt: p.alt))
             t += 120
         }
         var hours: [HourPt] = []
         for h in 0..<24 {
             if let hd = calr.date(byAdding: .hour, value: h, to: d0) {
-                let p = Astro.sunPosition(hd, o)
+                let p = b == .sun ? Astro.sunPosition(hd, o) : Astro.moonPosition(hd, o)
                 hours.append(HourPt(h: calr.component(.hour, from: hd), az: p.az, alt: p.alt))
             }
         }
-        let ev = Astro.sunEvents(d0, o)
+        let ev = b == .sun ? Astro.sunEvents(d0, o) : Astro.moonEvents(d0, o)
         var rs: [RiseSet] = []
-        if let r = ev.rise { rs.append(RiseSet(t: r, rise: true, az: Astro.sunPosition(r, o).az)) }
-        if let s = ev.set { rs.append(RiseSet(t: s, rise: false, az: Astro.sunPosition(s, o).az)) }
+        if let r = ev.rise { rs.append(RiseSet(t: r, rise: true, az: position(r, b).az)) }
+        if let s = ev.set { rs.append(RiseSet(t: s, rise: false, az: position(s, b).az)) }
         let apex = pts.max(by: { $0.alt < $1.alt }) ?? SkyPt(az: 180, alt: 0)
         let dp = DayPath(pts: pts, hours: hours, ev: ev, rs: rs, apex: apex)
-        if pathCache.count > 24 { pathCache.removeAll() }
+        if pathCache.count > 40 { pathCache.removeAll() }
         pathCache[key] = dp
         return dp
     }
@@ -199,8 +206,14 @@ final class AppModel: ObservableObject {
     func hudInfo() -> HudInfo {
         let cd = AppModel.cameraDirection(cameraMatrix())
         let when = now()
-        let sp = Astro.sunPosition(when, obs)
-        var r = "☀ \(Int(sp.az.rounded()))° · " + String(format: "%.1f°", sp.alt)
+        let sp = position(when, target)
+        var r: String
+        if target == .sun {
+            r = "☀ \(Int(sp.az.rounded()))° · " + String(format: "%.1f°", sp.alt)
+        } else {
+            let ph = Astro.moonPhase(when)
+            r = "☾ \(Int(sp.az.rounded()))° · " + String(format: "%.1f°", sp.alt) + " · \(Int((ph.illum * 100).rounded()))%"
+        }
         if travel != nil { r = L.shortDate(when) + " " + L.time(when) + "  ·  " + r }
         var chip: String? = nil
         var alert = false
@@ -215,17 +228,25 @@ final class AppModel: ObservableObject {
     // MARK: calibration
 
     /// Shift the calibration so the screen point `pt` shows the computed sun.
-    func alignPoint(_ pt: CGPoint, _ sun: Astro.SunPos) {
+    /// Shift the calibration so the screen point `pt` shows the body at `target`.
+    func alignPoint(_ pt: CGPoint, _ target: Astro.SunPos) {
         let d = projector(screen).direction(at: pt)
         var c = cal
-        c.yaw = Astro.wrap180(c.yaw + Astro.wrap180(sun.az - d.az))
-        c.pitch = max(-30, min(30, c.pitch + sun.alt - d.alt))
+        c.yaw = Astro.wrap180(c.yaw + Astro.wrap180(target.az - d.az))
+        c.pitch = max(-30, min(30, c.pitch + target.alt - d.alt))
         cal = c
     }
 
+    /// Live (not time-travel) position of the tracked body, if it is above the horizon.
+    func trackedBodyUp() -> Astro.SunPos? {
+        let p = position(Date(), target)
+        return p.alt > -0.5 ? p : nil
+    }
+
     func alignCenter() {
-        alignPoint(CGPoint(x: screen.width / 2, y: screen.height / 2), Astro.sunPosition(Date(), obs))
-        showToast(L.t("aligned"))
+        guard let p = trackedBodyUp() else { return }
+        alignPoint(CGPoint(x: screen.width / 2, y: screen.height / 2), p)
+        showToast(L.t(target == .sun ? "aligned" : "alignedMoon"))
     }
 
     func resetCalibration() {
@@ -233,17 +254,27 @@ final class AppModel: ObservableObject {
         detAligned = false
     }
 
-    /// The camera found the sun at normalised picture position `n`.
+    /// The camera found a bright round blob at normalised picture position `n`:
+    /// the Sun by day, or the Moon at night. Align to whichever matches.
     private func handleSun(_ n: CGPoint) {
         camera.detect = cal.auto
         guard cal.auto, cameraOn, motion.R != nil, panel != .calibrate, loc.src != "approx" else { detCount = 0; return }
-        let sun = Astro.sunPosition(Date(), obs)
-        guard sun.alt > 1 else { detCount = 0; return }
+        let now = Date()
+        let sun = Astro.sunPosition(now, obs)
+        var candidates: [Astro.SunPos] = []
+        if sun.alt > 1 { candidates.append(sun) }
+        if sun.altGeo < -3 {
+            let moon = Astro.moonPosition(now, obs)
+            if moon.alt > 1 { candidates.append(moon) }
+        }
+        if candidates.isEmpty { detCount = 0; return }
         let W = Double(screen.width), H = Double(screen.height)
         let s = max(W / camera.bufferW, H / camera.bufferH)
         let pt = CGPoint(x: W / 2 + (Double(n.x) - 0.5) * camera.bufferW * s, y: H / 2 + (Double(n.y) - 0.5) * camera.bufferH * s)
         let d = projector(screen).direction(at: pt)
-        let err = hypot(Astro.wrap180(sun.az - d.az) * cos(sun.alt * Astro.D2R), sun.alt - d.alt)
+        func error(_ b: Astro.SunPos) -> Double { hypot(Astro.wrap180(b.az - d.az) * cos(b.alt * Astro.D2R), b.alt - d.alt) }
+        guard let body = candidates.min(by: { error($0) < error($1) }) else { return }
+        let err = error(body)
         // first alignment may fix a larger error; afterwards only small drift
         if err > (detAligned ? 6 : 25) { detCount = 0; return }
         let steady = detCount > 0 && hypot(Astro.wrap180(d.az - detPrevAz) * cos(d.alt * Astro.D2R), d.alt - detPrevAlt) < 0.8
@@ -251,10 +282,21 @@ final class AppModel: ObservableObject {
         detPrevAz = d.az
         detPrevAlt = d.alt
         if detCount < 3 || err < 0.3 { return }
-        alignPoint(pt, sun)
+        alignPoint(pt, body)
         detCount = 0
         detAligned = true
-        if !detAnnounced { detAnnounced = true; showToast(L.t("autoAligned")) }
+        if !detAnnounced { detAnnounced = true; showToast(L.t(sun.alt > 1 ? "autoAligned" : "autoAlignedMoon")) }
+    }
+
+    func setTarget(_ b: SkyBody) {
+        guard target != b else { return }
+        target = b
+        if b == .moon {
+            let ph = Astro.moonPhase(now())
+            showToast(L.t("moon") + " · " + L.t("phase\(ph.index)") + " · \(Int((ph.illum * 100).rounded()))%")
+        } else {
+            showToast(L.t("sun"))
+        }
     }
 
     // MARK: time travel / compare / eclipses

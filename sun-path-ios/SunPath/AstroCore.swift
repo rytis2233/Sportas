@@ -214,10 +214,9 @@ enum Astro {
         var dayLength: Double  // seconds
     }
 
-    /// Sunrise, sunset and solar noon for the local day starting at `dayStart`.
-    static func sunEvents(_ dayStart: Date, _ obs: Observer) -> SunEvents {
-        let t0 = dayStart.timeIntervalSince1970, H0 = -0.8333
-        let f: (Double) -> Double = { t in sunPosition(t, obs).altGeo - H0 }
+    /// Rise, set and highest point for the local day starting at `t0`.
+    /// `f` = altitude above the rise/set threshold, `apparent` = altitude to report at the highest point.
+    private static func dayEvents(_ t0: Double, _ f: (Double) -> Double, _ apparent: (Double) -> Double) -> SunEvents {
         var rise: Double? = nil, set: Double? = nil
         var prev = f(t0)
         let step = 600.0
@@ -236,9 +235,47 @@ enum Astro {
         var state = "normal"
         if rise == nil && set == nil { state = f(noonT) > 0 ? "polarDay" : "polarNight" }
         var dl = 0.0
-        if let r = rise, let s = set { dl = s - r } else if state == "polarDay" { dl = 86400 }
+        if let r = rise, let s = set { dl = s > r ? s - r : 86400 - (r - s) } else if state == "polarDay" { dl = 86400 }
         return SunEvents(rise: rise.map { Date(timeIntervalSince1970: $0) }, set: set.map { Date(timeIntervalSince1970: $0) },
-                         noon: Date(timeIntervalSince1970: noonT), noonAlt: sunPosition(noonT, obs).alt, state: state, dayLength: dl)
+                         noon: Date(timeIntervalSince1970: noonT), noonAlt: apparent(noonT), state: state, dayLength: dl)
+    }
+
+    /// Sunrise, sunset and solar noon for the local day starting at `dayStart`.
+    static func sunEvents(_ dayStart: Date, _ obs: Observer) -> SunEvents {
+        dayEvents(dayStart.timeIntervalSince1970, { sunPosition($0, obs).altGeo + 0.8333 }, { sunPosition($0, obs).alt })
+    }
+
+    /// Moonrise, moonset and the Moon's highest point for the local day starting at `dayStart`.
+    /// Rise/set = upper limb on the horizon (34' refraction + topocentric semi-diameter).
+    static func moonEvents(_ dayStart: Date, _ obs: Observer) -> SunEvents {
+        dayEvents(dayStart.timeIntervalSince1970, { t in
+            let p = moonPosition(t, obs)
+            return p.altGeo + 0.5667 + asin(1737.4 / p.distKm) * R2D
+        }, { moonPosition($0, obs).alt })
+    }
+
+    /// Topocentric Moon; `alt` is apparent (refracted).
+    static func moonPosition(_ t: Double, _ obs: Observer) -> SunPos {
+        let c = context(t, obs, true)
+        let h = horizontal(c.moon, c.lst, obs.lat)
+        return SunPos(az: h.az, alt: h.alt + refraction(h.alt), altGeo: h.alt, distKm: h.dist)
+    }
+    static func moonPosition(_ d: Date, _ obs: Observer) -> SunPos { moonPosition(d.timeIntervalSince1970, obs) }
+
+    struct MoonPhase {
+        var illum: Double     // illuminated fraction 0…1
+        var waxing: Bool
+        var index: Int        // 0 new, 1 waxing crescent, 2 first quarter, 3 waxing gibbous, 4 full, 5 waning gibbous, 6 last quarter, 7 waning crescent
+    }
+    /// Moon phase (Meeus ch. 48: phase angle from elongation and distances).
+    static func moonPhase(_ d: Date) -> MoonPhase {
+        let T = centuries(d.timeIntervalSince1970), n = nutation(T)
+        let s = sunEcl(T, n), m = moonEcl(T, n)
+        let sv = eclToEqVec(s.lam, s.beta, n.eps, s.distKm), mv = eclToEqVec(m.lam, m.beta, n.eps, m.distKm)
+        let psi = vAngle(sv, mv)
+        let i = atan2(len(sv) * sin(psi), len(mv) - len(sv) * cos(psi))
+        let dl = norm360(m.lam - s.lam)
+        return MoonPhase(illum: (1 + cos(i)) / 2, waxing: dl < 180, index: Int((dl / 45).rounded()) % 8)
     }
 
     static func sunLongitudeTime(_ target: Double, _ guess: Double) -> Double {

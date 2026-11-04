@@ -106,12 +106,9 @@ struct OverlayLayer: View {
                     .onEnded { v in
                         last = nil
                         let moved = hypot(Double(v.location.x - v.startLocation.x), Double(v.location.y - v.startLocation.y))
-                        if m.panel == .calibrate && moved < 10 && m.motion.R != nil {
-                            let sun = Astro.sunPosition(Date(), m.obs)
-                            if sun.alt > -0.5 {
-                                m.alignPoint(v.location, sun)
-                                m.showToast(L.t("aligned"))
-                            }
+                        if m.panel == .calibrate && moved < 10 && m.motion.R != nil, let tb = m.trackedBodyUp() {
+                            m.alignPoint(v.location, tb)
+                            m.showToast(L.t(m.target == .sun ? "aligned" : "alignedMoon"))
                         }
                     }
             )
@@ -197,11 +194,38 @@ struct BottomBar: View {
         HStack(spacing: 18) {
             RoundButton(icon: "info.circle") { m.sheet = .about }
             RoundButton(icon: "camera") { m.takePhoto() }
-            Spacer()
+            Spacer(minLength: 4)
+            BodySwitch(m: m)
+            Spacer(minLength: 4)
             RoundButton(icon: "line.3.horizontal", big: true) { m.menuOpen = true }
         }
         .padding(.horizontal, 24)
         .padding(.bottom, 8)
+    }
+}
+
+/// Sun / Moon switch on the main screen.
+struct BodySwitch: View {
+    @ObservedObject var m: AppModel
+    var body: some View {
+        HStack(spacing: 2) {
+            segment("sun.max.fill", .sun, SunColor)
+            segment("moon.fill", .moon, MoonColor)
+        }
+        .padding(4)
+        .background(Capsule().fill(Color.black.opacity(0.6)))
+    }
+    private func segment(_ icon: String, _ b: SkyBody, _ color: Color) -> some View {
+        let on = m.target == b
+        return Button { m.setTarget(b) } label: {
+            Image(systemName: icon)
+                .font(.system(size: 19, weight: .semibold))
+                .foregroundColor(on ? .black : .white.opacity(0.85))
+                .frame(width: 46, height: 46)
+                .background(Circle().fill(on ? color : Color.clear))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(L.t(b == .sun ? "sun" : "moon"))
     }
 }
 
@@ -321,7 +345,8 @@ struct ComparePanel: View {
     @ObservedObject var m: AppModel
     var body: some View {
         let other = m.compare ?? Date()
-        let a = m.dayPath(m.now()).ev, b = m.dayPath(other).ev
+        let moon = m.target == .moon
+        let a = m.dayPath(m.now(), m.target).ev, b = m.dayPath(other, m.target).ev
         VStack(alignment: .leading, spacing: 10) {
             HStack {
                 Text(L.t("cmpTitle")).font(.system(size: 17, weight: .semibold))
@@ -344,10 +369,17 @@ struct ComparePanel: View {
                     Text(L.shortDate(m.now())).fontWeight(.semibold).foregroundColor(SunColor)
                     Text(L.shortDate(other)).fontWeight(.semibold).foregroundColor(CompareColor)
                 }
-                row(L.t("sunrise"), L.time(a.rise), L.time(b.rise))
-                row(L.t("sunset"), L.time(a.set), L.time(b.set))
-                row(L.t("noonAlt"), L.deg(a.noonAlt, 1), L.deg(b.noonAlt, 1))
-                row(L.t("daylength"), length(a), length(b))
+                if moon {
+                    row(L.t("moonrise"), L.time(a.rise), L.time(b.rise))
+                    row(L.t("moonset"), L.time(a.set), L.time(b.set))
+                    row(L.t("maxAlt"), L.deg(a.noonAlt, 1), L.deg(b.noonAlt, 1))
+                    row(L.t("illum"), lit(m.now()), lit(other))
+                } else {
+                    row(L.t("sunrise"), L.time(a.rise), L.time(b.rise))
+                    row(L.t("sunset"), L.time(a.set), L.time(b.set))
+                    row(L.t("noonAlt"), L.deg(a.noonAlt, 1), L.deg(b.noonAlt, 1))
+                    row(L.t("daylength"), length(a), length(b))
+                }
             }
             .font(.system(size: 14))
             .monospacedDigit()
@@ -366,19 +398,21 @@ struct ComparePanel: View {
         }
     }
     private func length(_ e: Astro.SunEvents) -> String { e.state == "normal" ? L.dur(e.dayLength) : L.t(e.state) }
+    private func lit(_ d: Date) -> String { "\(Int((Astro.moonPhase(d).illum * 100).rounded()))%" }
 }
 
 struct CalibratePanel: View {
     @ObservedObject var m: AppModel
     var body: some View {
-        let sunUp = Astro.sunPosition(Date(), m.obs).alt > -0.5
+        let sunUp = m.trackedBodyUp() != nil
+        let moon = m.target == .moon
         VStack(alignment: .leading, spacing: 10) {
             HStack {
                 Text(L.t("calibrate")).font(.system(size: 17, weight: .semibold))
                 Spacer()
                 Text(m.compassName).font(.system(size: 13)).foregroundColor(.white.opacity(0.62))
             }
-            Text(sunUp ? L.t("calHelp") : L.t("calHelpNight"))
+            Text(moon ? L.t(sunUp ? "calHelpMoon" : "calHelpMoonDown") : L.t(sunUp ? "calHelp" : "calHelpNight"))
                 .font(.system(size: 14)).foregroundColor(.white.opacity(0.62))
                 .fixedSize(horizontal: false, vertical: true)
             HStack(spacing: 10) {
@@ -388,7 +422,7 @@ struct CalibratePanel: View {
             }
             Toggle(L.t("autoAlign"), isOn: $m.cal.auto).font(.system(size: 14)).tint(SunColor)
             HStack(spacing: 10) {
-                Pill(title: L.t("alignSun"), primary: true) { m.alignCenter() }
+                Pill(title: L.t(moon ? "alignMoon" : "alignSun"), primary: true) { m.alignCenter() }
                     .disabled(!sunUp)
                     .opacity(sunUp ? 1 : 0.4)
                 Pill(title: L.t("reset")) { m.resetCalibration() }
@@ -418,6 +452,8 @@ struct AboutSheet: View {
 
     var body: some View {
         let ev = m.dayPath(Date()).ev
+        let mev = m.dayPath(Date(), .moon).ev
+        let phase = Astro.moonPhase(Date())
         ScrollView {
             VStack(alignment: .leading, spacing: 6) {
                 SheetTitle(text: L.t("about"))
@@ -436,6 +472,14 @@ struct AboutSheet: View {
                     kv(L.t("noon"), L.time(ev.noon) + " · " + L.deg(ev.noonAlt, 1))
                     kv(L.t("sunset"), L.time(ev.set))
                     kv(L.t("daylength"), ev.state == "normal" ? L.dur(ev.dayLength) : L.t(ev.state))
+                }
+                .font(.system(size: 15))
+                Text(L.t("moonToday")).font(.system(size: 16, weight: .semibold)).padding(.top, 12)
+                Grid(alignment: .leading, horizontalSpacing: 14, verticalSpacing: 6) {
+                    kv(L.t("phase"), L.t("phase\(phase.index)") + " · \(Int((phase.illum * 100).rounded()))%")
+                    kv(L.t("moonrise"), mev.state == "normal" ? L.time(mev.rise) : moonState(mev.state))
+                    kv(L.t("moonset"), mev.state == "normal" ? L.time(mev.set) : moonState(mev.state))
+                    kv(L.t("maxAlt"), L.time(mev.noon) + " · " + L.deg(mev.noonAlt, 1))
                 }
                 .font(.system(size: 15))
                 HStack(spacing: 10) {
@@ -468,6 +512,7 @@ struct AboutSheet: View {
         }
     }
 
+    private func moonState(_ s: String) -> String { s == "polarDay" ? L.t("moonNeverSets") : L.t("moonNeverRises") }
     private var locSource: String {
         m.loc.src == "gps" ? L.t("gps") : (m.loc.src == "manual" ? L.t("manualLoc") : L.t("approxLoc"))
     }
