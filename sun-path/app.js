@@ -997,6 +997,10 @@
   requestAnimationFrame(frame);
   if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js", { scope: "./" }).catch(() => {});
   // a newer version took over (service worker update): reload once if the user hasn't started yet
-  if ("serviceWorker" in navigator) navigator.serviceWorker.addEventListener("controllerchange", () => { if (!S.started && !window.__reloaded) { window.__reloaded = true; location.reload(); } });
+  // (only for an update — not when the service worker is installed for the first time)
+  if ("serviceWorker" in navigator) {
+    const hadController = !!navigator.serviceWorker.controller;
+    navigator.serviceWorker.addEventListener("controllerchange", () => { if (hadController && !S.started) location.reload(); });
+  }
   window.__sunpath = { S, O, start, sunScreen: () => { const sp = Astro.sunPosition(new Date(), obs()); return CAM && project(sp.az, sp.alt); } };
 })();
