@@ -1,5 +1,5 @@
-// Sun Path — offline: serve the app shell from cache, refresh it in the background.
-const CACHE = "sunpath-v1";
+// Sun Path — offline support: network first (so updates arrive at once), cached copy when offline.
+const CACHE = "sunpath-v2";
 const FILES = ["./", "index.html", "app.js", "astro.js", "manifest.webmanifest", "icon-180.png", "icon-192.png", "icon-512.png"];
 self.addEventListener("install", e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES))); self.skipWaiting(); });
 self.addEventListener("activate", e => {
@@ -8,9 +8,7 @@ self.addEventListener("activate", e => {
 self.addEventListener("fetch", e => {
   const req = e.request;
   if (req.method !== "GET" || new URL(req.url).origin !== location.origin) return;
-  e.respondWith(caches.open(CACHE).then(async c => {
-    const hit = await c.match(req, { ignoreSearch: true });
-    const net = fetch(req).then(res => { if (res.ok) c.put(req, res.clone()); return res; }).catch(() => null);
-    return hit || (await net) || c.match("./");
-  }));
+  e.respondWith(caches.open(CACHE).then(c =>
+    fetch(req).then(res => { if (res.ok) c.put(req, res.clone()); return res; })
+      .catch(() => c.match(req, { ignoreSearch: true }).then(r => r || c.match("./")))));
 });

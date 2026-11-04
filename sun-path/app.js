@@ -26,10 +26,10 @@
       edit: "Edit", save: "Save", useGps: "Use GPS", lat: "Latitude", lon: "Longitude",
       gps: "GPS", manualLoc: "set manually", approxLoc: "approximate — tap Edit",
       cmpGood: "good (compass + gyro)", cmpGyro: "gyro only (interference)", cmpNone: "not available", cmpManual: "no motion sensors",
-      calHelp: "Aim the crosshair at the sun and tap Align to sun — or drag the screen to nudge the overlay.",
+      calHelp: "Tap the real sun on the screen, or aim the crosshair at it and tap Align to sun. Drag to nudge.",
       calHelpNight: "The sun is below the horizon. Drag the screen to nudge the overlay onto a known direction.",
       alignSun: "Align to sun", fov: "Field of view", offset: "Offset", figure8: "If directions look wrong, wave the phone in a figure-8 to recalibrate its compass.",
-      aligned: "Aligned to the sun",
+      aligned: "Aligned to the sun", autoAligned: "☀ Sun found in the camera — overlay aligned", autoAlign: "Auto-align when the sun is in view", waitLoc: "Waiting for location…", calibration: "Calibration",
       cmpTitle: "Compare with", hideCmp: "Turn off",
       junSol: "June solstice", decSol: "December solstice", marEq: "March equinox", plus1m: "+1 month", plus6m: "+6 months",
       solOn: "Solstice arcs on", solOff: "Solstice arcs off", equinox: "Equinox",
@@ -62,10 +62,10 @@
       edit: "Keisti", save: "Išsaugoti", useGps: "Naudoti GPS", lat: "Platuma", lon: "Ilguma",
       gps: "GPS", manualLoc: "nustatyta rankiniu būdu", approxLoc: "apytikslė — spausk Keisti",
       cmpGood: "geras (kompasas + giroskopas)", cmpGyro: "tik giroskopas (trikdžiai)", cmpNone: "nėra", cmpManual: "nėra judesio jutiklių",
-      calHelp: "Nukreipk kryželį į saulę ir spausk „Sulygiuoti su saule“ — arba tempk ekraną, kad pataisytum piešinį.",
+      calHelp: "Paliesk tikrąją saulę ekrane arba nukreipk į ją kryželį ir spausk „Sulygiuoti su saule“. Tempk, kad pataisytum.",
       calHelpNight: "Saulė po horizontu. Tempk ekraną, kad sulygintum piešinį su žinoma kryptimi.",
       alignSun: "Sulygiuoti su saule", fov: "Matymo kampas", offset: "Pataisa", figure8: "Jei kryptys atrodo neteisingos, pamojuok telefonu aštuoniuke, kad kompasas persikalibruotų.",
-      aligned: "Sulygiuota su saule",
+      aligned: "Sulygiuota su saule", autoAligned: "☀ Saulė rasta kameroje — piešinys sulygiuotas", autoAlign: "Automatiškai lygiuoti, kai saulė matoma", waitLoc: "Laukiama vietos…", calibration: "Kalibravimas",
       cmpTitle: "Palyginti su", hideCmp: "Išjungti",
       junSol: "Birželio saulėgrįža", decSol: "Gruodžio saulėgrįža", marEq: "Kovo lygiadienis", plus1m: "+1 mėn.", plus6m: "+6 mėn.",
       solOn: "Saulėgrįžų lankai įjungti", solOff: "Saulėgrįžų lankai išjungti", equinox: "Lygiadienis",
@@ -91,7 +91,7 @@
   const S = {
     lang: store.get("lang", (navigator.language || "en").toLowerCase().startsWith("lt") ? "lt" : "en"),
     loc: store.get("loc", null),
-    cal: Object.assign({ yaw: 0, pitch: 0, fov: 64 }, store.get("cal", {})),
+    cal: Object.assign({ yaw: 0, pitch: 0, fov: 64, auto: true }, store.get("cal", {})),
     solstice: store.get("solstice", false),
     travel: null, compare: null, eclipse: null, playing: false,
     panel: null, sheet: null,
@@ -209,22 +209,25 @@
   function feedCompass(headingTrue, accuracy) {
     if (!O.Rdev) return;
     const tnow = performance.now();
-    O.lastAbs = tnow; O.acc = accuracy;
+    O.lastAbs = tnow; O.acc = accuracy; O.rawHeading = norm360(headingTrue - O.decl);
+    if (accuracy !== null && accuracy < 0) { if (O.offset !== null) O.mode = "gyro"; return; } // iOS: -1 = invalid
     const sample = norm360(headingTrue - refHeading(O.Rdev));
-    if (O.offset === null) { O.offset = sample; O.mode = "compass"; return; }
-    if (accuracy !== null && (accuracy < 0 || accuracy > 35)) { O.mode = "gyro"; O.disagreeSince = 0; return; }
+    if (O.offset === null) { O.offset = sample; O.mode = "compass"; O.settleUntil = tnow + 3000; return; }
     const diff = wrap180(sample - O.offset);
-    if (Math.abs(diff) > 12) {
+    const settling = tnow < O.settleUntil;
+    if (!settling && Math.abs(diff) > Math.max(12, (accuracy || 0) * 0.8)) {
       // Compass and gyroscope disagree: ignore brief disagreements (fast turns, nearby metal);
-      // if the compass is consistent about a new direction for several seconds, re-anchor to it.
-      if (!O.disagreeSince) O.disagreeSince = tnow;
+      // if the compass keeps pointing to the same new direction for 5 s, re-anchor to it.
+      if (!O.disagreeSince || Math.abs(wrap180(sample - O.cand)) > 8) { O.disagreeSince = tnow; O.cand = sample; }
+      else O.cand = norm360(O.cand + wrap180(sample - O.cand) * 0.1);
       const dur = tnow - O.disagreeSince;
       if (dur > 1500) O.mode = "gyro";
-      if (dur > 8000) { O.offset = sample; O.disagreeSince = 0; O.mode = "compass"; }
+      if (dur > 5000) { O.offset = O.cand; O.disagreeSince = 0; O.mode = "compass"; }
       return;
     }
     O.disagreeSince = 0; O.mode = "compass";
-    O.offset = norm360(O.offset + diff * 0.02);
+    const w = accuracy === null || accuracy <= 15 ? 1 : accuracy <= 30 ? 0.5 : 0.25;
+    O.offset = norm360(O.offset + diff * (settling ? 0.15 : 0.02) * w);
   }
   function onOrientation(e) {
     if (e.alpha === null || e.alpha === undefined) return;
@@ -523,6 +526,7 @@
     drawSun(sp, when.getTime());
     drawCrosshair(S.panel === "calibrate");
 
+    autoAlign(ts);
     if (ts - lastHud > 150) { lastHud = ts; updateHud(camAz, camAlt, sp, when); }
   }
 
@@ -536,6 +540,7 @@
     let msg = null, cls = "chip warn";
     if (S.travel && S.panel !== "travel") msg = "⏱ " + t("timeTravel");
     else if (S.panel === "calibrate") msg = t("calibrating");
+    else if (S.loc.src === "approx") { msg = t("waitLoc"); cls = "chip alert"; }
     else if (cs === "gyro") { msg = t("gyroOnly"); cls = "chip alert"; }
     else if (cs === "none") { msg = t("noCompass"); cls = "chip alert"; }
     else if (cs === "manual") msg = t("manual");
@@ -547,18 +552,25 @@
   let drag = null;
   cv.addEventListener("pointerdown", e => {
     if (!(O.manual || S.panel === "calibrate")) return;
-    drag = { x: e.clientX, y: e.clientY }; cv.setPointerCapture(e.pointerId);
+    drag = { x: e.clientX, y: e.clientY, x0: e.clientX, y0: e.clientY }; cv.setPointerCapture(e.pointerId);
   });
   cv.addEventListener("pointermove", e => {
     if (!drag) return;
     const k = S.cal.fov / Math.max(W, H) * (S.panel === "calibrate" && !O.manual ? 0.5 : 1);
     const dx = (e.clientX - drag.x) * k, dy = (e.clientY - drag.y) * k;
-    drag = { x: e.clientX, y: e.clientY };
+    drag.x = e.clientX; drag.y = e.clientY;
     if (S.panel === "calibrate" && !O.manual) { S.cal.yaw = wrap180(S.cal.yaw - dx); S.cal.pitch = clamp(S.cal.pitch + dy, -30, 30); store.set("cal", S.cal); }
     else { S.view.yaw = norm360(S.view.yaw - dx); S.view.pitch = clamp(S.view.pitch + dy, -85, 85); }
   });
   const endDrag = () => { drag = null; };
-  cv.addEventListener("pointerup", endDrag); cv.addEventListener("pointercancel", endDrag);
+  cv.addEventListener("pointerup", e => {
+    // a tap (not a drag) in calibrate mode: "this is where the real sun is"
+    if (drag && S.panel === "calibrate" && !O.manual && Math.hypot(e.clientX - drag.x0, e.clientY - drag.y0) < 10) {
+      const sun = Astro.sunPosition(new Date(), obs());
+      if (sun.alt > -0.5) { alignPointToSun(e.clientX, e.clientY, sun); toast(t("aligned")); }
+    }
+    endDrag();
+  }); cv.addEventListener("pointercancel", endDrag);
   cv.addEventListener("wheel", e => { if (O.manual) { S.cal.fov = clamp(S.cal.fov + e.deltaY * 0.03, 30, 110); e.preventDefault(); } }, { passive: false });
 
   // ---------------------------------------------------------------- UI helpers
@@ -697,12 +709,16 @@
       <p id="calHelp"></p>
       <label class="inline" for="calFov">${esc(t("fov"))} <span id="calFovV" style="min-width:44px;color:var(--ink)"></span><input type="range" id="calFov" min="35" max="100" step="0.5"></label>
       <div class="row"><button class="btn primary" id="calSun">${esc(t("alignSun"))}</button><button class="btn" id="calReset">${esc(t("reset"))}</button><span style="flex:1"></span><button class="btn" id="calDone">${esc(t("done"))}</button></div>
+      <label class="inline"><input type="checkbox" id="calAuto" style="width:20px;height:20px;accent-color:var(--sun)"> ${esc(t("autoAlign"))}</label>
       <div class="sub" id="calOff"></div>`,
       el => {
         el.querySelector("#calSun").onclick = alignToSun;
-        el.querySelector("#calReset").onclick = () => { S.cal.yaw = 0; S.cal.pitch = 0; S.cal.fov = 64; store.set("cal", S.cal); syncCalibrate(); };
+        el.querySelector("#calReset").onclick = () => { S.cal.yaw = 0; S.cal.pitch = 0; S.cal.fov = 64; det.aligned = false; store.set("cal", S.cal); syncCalibrate(); };
         el.querySelector("#calFov").addEventListener("input", e => { S.cal.fov = +e.target.value; store.set("cal", S.cal); syncCalibrate(); });
         el.querySelector("#calDone").onclick = closePanel;
+        const ca = el.querySelector("#calAuto");
+        ca.checked = S.cal.auto !== false;
+        ca.onchange = () => { S.cal.auto = ca.checked; store.set("cal", S.cal); };
         syncCalibrate();
       });
   }
@@ -719,16 +735,84 @@
     el.querySelector("#calCmp").textContent = ({ compass: t("cmpGood"), gyro: t("cmpGyro"), none: t("cmpNone"), manual: t("cmpManual") }[cs])
       + (O.acc !== null && O.acc >= 0 && cs === "compass" ? " ±" + Math.round(O.acc) + "°" : "");
   }
-  function alignToSun() {
-    const sun = Astro.sunPosition(new Date(), obs());
-    const R = cameraMatrix(true), fwd = apply(R, [0, 0, -1]);
-    const camAz = headingOf(fwd), camAlt = Math.asin(clamp(fwd[2], -1, 1)) * R2D;
-    S.cal.yaw = wrap180(S.cal.yaw + wrap180(sun.az - camAz));
-    S.cal.pitch = clamp(S.cal.pitch + (sun.alt - camAlt), -30, 30);
+  // Direction (az/alt) that a screen point looks at, with the current calibration.
+  function screenDir(x, y, R) {
+    const d = [(x - W / 2) / F, -(y - H / 2) / F, -1], n = Math.hypot(...d);
+    const w = apply(R, d.map(v => v / n));
+    return { az: headingOf(w), alt: Math.asin(clamp(w[2], -1, 1)) * R2D };
+  }
+  // Shift the calibration so that the screen point (x, y) shows the computed sun.
+  function alignPointToSun(x, y, sun) {
+    const p = screenDir(x, y, cameraMatrix(true));
+    S.cal.yaw = wrap180(S.cal.yaw + wrap180(sun.az - p.az));
+    S.cal.pitch = clamp(S.cal.pitch + (sun.alt - p.alt), -30, 30);
     store.set("cal", S.cal);
     O.q = null;
-    toast(t("aligned"));
     syncCalibrate();
+  }
+  function alignToSun() {
+    alignPointToSun(W / 2, H / 2, Astro.sunPosition(new Date(), obs()));
+    toast(t("aligned"));
+  }
+
+  // Find the sun in the camera image: the largest compact blob of saturated pixels.
+  const det = { cv: null, g: null, last: 0, prev: null, aligned: false, announced: false };
+  function findSunInVideo() {
+    const vw = video.videoWidth, vh = video.videoHeight;
+    if (!vw || !vh) return null;
+    const tw = 120, th = Math.max(1, Math.round(tw * vh / vw));
+    if (!det.cv) { det.cv = document.createElement("canvas"); det.g = det.cv.getContext("2d", { willReadFrequently: true }); }
+    if (det.cv.width !== tw || det.cv.height !== th) { det.cv.width = tw; det.cv.height = th; }
+    det.g.drawImage(video, 0, 0, tw, th);
+    let px;
+    try { px = det.g.getImageData(0, 0, tw, th).data; } catch (e) { return null; }
+    const N = tw * th, lum = new Uint8Array(N);
+    let max = 0;
+    for (let i = 0; i < N; i++) { const l = (px[i * 4] * 54 + px[i * 4 + 1] * 183 + px[i * 4 + 2] * 19) >> 8; lum[i] = l; if (l > max) max = l; }
+    if (max < 245) return null;
+    const thr = max - 4, lab = new Uint8Array(N), stack = [];
+    let best = null;
+    for (let i = 0; i < N; i++) {
+      if (lum[i] < thr || lab[i]) continue;
+      let area = 0, sx = 0, sy = 0, x0 = tw, x1 = 0, y0 = th, y1 = 0;
+      lab[i] = 1; stack.push(i);
+      while (stack.length) {
+        const j = stack.pop(), x = j % tw, y = (j / tw) | 0;
+        area++; sx += x; sy += y;
+        if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y;
+        if (x > 0 && !lab[j - 1] && lum[j - 1] >= thr) { lab[j - 1] = 1; stack.push(j - 1); }
+        if (x < tw - 1 && !lab[j + 1] && lum[j + 1] >= thr) { lab[j + 1] = 1; stack.push(j + 1); }
+        if (y > 0 && !lab[j - tw] && lum[j - tw] >= thr) { lab[j - tw] = 1; stack.push(j - tw); }
+        if (y < th - 1 && !lab[j + tw] && lum[j + tw] >= thr) { lab[j + tw] = 1; stack.push(j + tw); }
+      }
+      if (!best || area > best.area) best = { area, cx: sx / area, cy: sy / area, w: x1 - x0 + 1, h: y1 - y0 + 1 };
+    }
+    if (!best || best.area < 3 || best.area > N * 0.08) return null;     // too small, or a bright cloud / overexposed sky
+    const aspect = best.w / best.h;
+    if (aspect < 0.45 || aspect > 2.2 || best.area / (best.w * best.h) < 0.4) return null; // not round: glint, window frame
+    const sc = Math.max(W / vw, H / vh);
+    const vx = (best.cx + 0.5) * vw / tw, vy = (best.cy + 0.5) * vh / th;
+    return { x: W / 2 + (vx - vw / 2) * sc, y: H / 2 + (vy - vh / 2) * sc };
+  }
+  function autoAlign(ts) {
+    if (!S.cal.auto || O.manual || !O.Rdev || video.hidden || S.panel === "calibrate" || ts - det.last < 400) return;
+    det.last = ts;
+    const sun = Astro.sunPosition(new Date(), obs());
+    if (sun.alt < 1 || S.loc.src === "approx") { det.prev = null; return; }
+    const blob = findSunInVideo();
+    if (!blob) { det.prev = null; return; }
+    const R = cameraMatrix(true), p = screenDir(blob.x, blob.y, R);
+    const err = Math.hypot(wrap180(sun.az - p.az) * Math.cos(sun.alt * D2R), sun.alt - p.alt);
+    // first alignment may correct a large compass error; afterwards only small drift
+    if (err > (det.aligned ? 6 : 35)) { det.prev = null; return; }
+    // the detection must be steady in the sky for ~1 s (phone held still, not a passing reflection)
+    const steady = det.prev && Math.hypot(wrap180(p.az - det.prev.az) * Math.cos(p.alt * D2R), p.alt - det.prev.alt) < 0.8;
+    det.prev = steady ? Object.assign(p, { n: det.prev.n + 1 }) : Object.assign(p, { n: 1 });
+    if (det.prev.n < 3 || err < 0.4) return;
+    alignPointToSun(blob.x, blob.y, sun);
+    det.prev = null;
+    det.aligned = true;
+    if (!det.announced) { det.announced = true; toast(t("autoAligned"), 3500); }
   }
 
   // ---------------------------------------------------------------- Eclipses
@@ -782,6 +866,7 @@
         <dt>${esc(t("location"))}</dt><dd>${o.lat.toFixed(4)}, ${o.lon.toFixed(4)}<br><span style="color:var(--muted);font-size:13px">${esc(locSrc)}</span></dd>
         <dt>${esc(t("compass"))}</dt><dd>${esc({ compass: t("cmpGood"), gyro: t("cmpGyro"), none: t("cmpNone"), manual: t("cmpManual") }[cs])}</dd>
         <dt>${esc(t("declination"))}</dt><dd>${(O.decl >= 0 ? "+" : "") + O.decl.toFixed(1)}°</dd>
+        <dt>${esc(t("calibration"))}</dt><dd>${(S.cal.yaw >= 0 ? "+" : "") + S.cal.yaw.toFixed(1)}° / ${(S.cal.pitch >= 0 ? "+" : "") + S.cal.pitch.toFixed(1)}° · FOV ${S.cal.fov.toFixed(0)}°${O.rawHeading !== undefined ? " · mag " + Math.round(O.rawHeading) + "°" + (O.acc !== null ? " ±" + Math.round(O.acc) : "") : ""}</dd>
         <dt>${esc(t("sunrise"))}</dt><dd>${fmtTime(ev.rise)}</dd>
         <dt>${esc(t("noon"))}</dt><dd>${fmtTime(ev.noon)} · ${fmtDeg(ev.noonAlt, 1)}</dd>
         <dt>${esc(t("sunset"))}</dt><dd>${fmtTime(ev.set)}</dd>
@@ -911,5 +996,7 @@
   applyI18n();
   requestAnimationFrame(frame);
   if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js", { scope: "./" }).catch(() => {});
-  window.__sunpath = { S, O, start };
+  // a newer version took over (service worker update): reload once if the user hasn't started yet
+  if ("serviceWorker" in navigator) navigator.serviceWorker.addEventListener("controllerchange", () => { if (!S.started && !window.__reloaded) { window.__reloaded = true; location.reload(); } });
+  window.__sunpath = { S, O, start, sunScreen: () => { const sp = Astro.sunPosition(new Date(), obs()); return CAM && project(sp.az, sp.alt); } };
 })();
