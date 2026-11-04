@@ -246,10 +246,9 @@
     return (a + b) / 2;
   }
 
-  /** Sunrise, sunset and solar noon for the local calendar day containing `dayStart` (local midnight). */
-  function sunEvents(dayStart, obs) {
-    const t0 = dayStart.getTime(), H0 = -0.8333;
-    const f = t => sunPosition(new Date(t), obs).altGeo - H0;
+  // Rise, set and highest point for the day starting at t0 (ms).
+  // f = altitude above the rise/set threshold; apparent = altitude to report at the highest point.
+  function dayEvents(t0, f, apparent) {
     let rise = null, set = null, prev = f(t0);
     const step = 10 * 60000;
     for (let t = t0 + step; t <= t0 + 86400000; t += step) {
@@ -258,15 +257,37 @@
       if (prev >= 0 && cur < 0 && !set) set = new Date(bisect(f, t - step, t, prev, 1000));
       prev = cur;
     }
-    // solar noon: Sun crosses the meridian — maximum altitude
     let best = t0, bestAlt = -99;
     for (let t = t0; t <= t0 + 86400000; t += 30 * 60000) { const a = f(t); if (a > bestAlt) { bestAlt = a; best = t; } }
     const noonT = goldenMin(t => -f(t), best - 30 * 60000, best + 30 * 60000, 1000);
-    const noon = new Date(noonT);
-    const noonAlt = sunPosition(noon, obs).alt;
     let state = "normal";
     if (!rise && !set) state = f(noonT) > 0 ? "polarDay" : "polarNight";
-    return { rise, set, noon, noonAlt, state, dayLengthMs: rise && set ? set - rise : (state === "polarDay" ? 86400000 : 0) };
+    const dayLengthMs = rise && set ? (set > rise ? set - rise : 86400000 - (rise - set)) : (state === "polarDay" ? 86400000 : 0);
+    return { rise, set, noon: new Date(noonT), noonAlt: apparent(noonT), state, dayLengthMs };
+  }
+
+  /** Sunrise, sunset and solar noon for the local calendar day containing `dayStart` (local midnight). */
+  function sunEvents(dayStart, obs) {
+    return dayEvents(dayStart.getTime(), t => sunPosition(new Date(t), obs).altGeo + 0.8333, t => sunPosition(new Date(t), obs).alt);
+  }
+
+  /** Moonrise, moonset and the Moon's highest point (upper limb on the horizon). */
+  function moonEvents(dayStart, obs) {
+    return dayEvents(dayStart.getTime(), t => {
+      const p = moonPosition(new Date(t), obs);
+      return p.altGeo + 0.5667 + Math.asin(1737.4 / p.distKm) * R2D;
+    }, t => moonPosition(new Date(t), obs).alt);
+  }
+
+  /** Moon phase: illuminated fraction, waxing, index 0 new … 4 full … 7 waning crescent. */
+  function moonPhase(date) {
+    const jd = jdFromDate(date), T = (jd + deltaT(jd) / 86400 - 2451545) / 36525, n = nutation(T);
+    const s = sunEcl(T, n), m = moonEcl(T, n);
+    const sv = eclToEqVec(s.lam, s.beta, n.eps, s.distKm), mv = eclToEqVec(m.lam, m.beta, n.eps, m.distKm);
+    const psi = vAngle(sv, mv), ls = Math.hypot(...sv), lm = Math.hypot(...mv);
+    const i = Math.atan2(ls * Math.sin(psi), lm - ls * Math.cos(psi));
+    const dl = norm360(m.lam - s.lam);
+    return { illum: (1 + Math.cos(i)) / 2, waxing: dl < 180, index: Math.round(dl / 45) % 8 };
   }
 
   /** Time when the Sun's apparent longitude reaches `target` degrees, near `guess` (Date). */
@@ -451,7 +472,7 @@
   }
 
   const api = {
-    sunPosition, moonPosition, sunEvents, seasons, upcomingEclipses, sunMoonDisks, magneticDeclination,
+    sunPosition, moonPosition, sunEvents, moonEvents, moonPhase, seasons, upcomingEclipses, sunMoonDisks, magneticDeclination,
     _internal: { moonEcl, sunEcl, nutation, jdFromDate, dateFromJd, deltaT, newMoonAfter, localEclipse, globalKind }
   };
   root.Astro = api;

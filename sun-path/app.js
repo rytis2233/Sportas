@@ -10,7 +10,7 @@
   // ---------------------------------------------------------------- i18n
   const STR = {
     en: {
-      appName: "Sun Path", tagline: "See where the sun travels across your sky — today, on any date, and during eclipses.",
+      appName: "Sun Path", tagline: "See where the sun and moon travel across your sky — today, on any date, and during eclipses.",
       start: "Start", startNote: "Uses the camera, motion sensors and location. Nothing leaves your device.",
       calibrate: "Calibrate", travel: "Time Travel", compare: "Compare Dates", solstice: "Solstice Arcs",
       eclipses: "Upcoming Eclipses", language: "Language", cancel: "Cancel", done: "Done", now: "Now", reset: "Reset",
@@ -42,11 +42,18 @@
       noCam: "Camera unavailable — showing the sky without video", noLoc: "Location unavailable — set it in About",
       noSensors: "No motion sensors — drag to look around", saved: "Photo saved", photo: "Photo",
       tapToStart: "Tap to enable motion sensors",
+      sun: "Sun", moon: "Moon", alignedMoon: "Aligned to the moon", autoAlignedMoon: "☾ Moon found in the camera — overlay aligned",
+      alignMoon: "Align to moon", calHelpMoon: "Tap the real moon on the screen, or aim the crosshair at it and tap Align to moon. Drag to nudge.",
+      calHelpMoonDown: "The moon is below the horizon. Drag the screen to nudge the overlay onto a known direction.",
+      today: "Sun today", moonToday: "Moon today", moonrise: "Moonrise", moonset: "Moonset", maxAlt: "Highest", illum: "Lit", phase: "Phase",
+      moonNeverSets: "Moon up all day", moonNeverRises: "Moon down all day",
+      phase0: "New moon", phase1: "Waxing crescent", phase2: "First quarter", phase3: "Waxing gibbous",
+      phase4: "Full moon", phase5: "Waning gibbous", phase6: "Last quarter", phase7: "Waning crescent",
       dirs: ["N","NNE","NE","ENE","E","ESE","SE","SSE","S","SSW","SW","WSW","W","WNW","NW","NNW"],
       locale: "en-GB"
     },
     lt: {
-      appName: "Saulės kelias", tagline: "Pamatyk, kur saulė keliauja tavo danguje — šiandien, bet kurią dieną ir užtemimų metu.",
+      appName: "Saulės kelias", tagline: "Pamatyk, kur saulė ir Mėnulis keliauja tavo danguje — šiandien, bet kurią dieną ir užtemimų metu.",
       start: "Pradėti", startNote: "Naudoja kamerą, judesio jutiklius ir vietą. Niekas neišsiunčiama iš telefono.",
       calibrate: "Kalibruoti", travel: "Kelionė laiku", compare: "Palyginti datas", solstice: "Saulėgrįžų lankai",
       eclipses: "Artimiausi užtemimai", language: "Kalba", cancel: "Atšaukti", done: "Baigti", now: "Dabar", reset: "Atstatyti",
@@ -78,6 +85,13 @@
       noCam: "Kamera nepasiekiama — rodomas dangus be vaizdo", noLoc: "Vieta nežinoma — nustatyk ją skiltyje Apie",
       noSensors: "Nėra judesio jutiklių — tempk, kad apsidairytum", saved: "Nuotrauka išsaugota", photo: "Nuotrauka",
       tapToStart: "Paliesk, kad įjungtum judesio jutiklius",
+      sun: "Saulė", moon: "Mėnulis", alignedMoon: "Sulygiuota su Mėnuliu", autoAlignedMoon: "☾ Mėnulis rastas kameroje — piešinys sulygiuotas",
+      alignMoon: "Sulygiuoti su Mėnuliu", calHelpMoon: "Paliesk tikrąjį Mėnulį ekrane arba nukreipk į jį kryželį ir spausk „Sulygiuoti su Mėnuliu“. Tempk, kad pataisytum.",
+      calHelpMoonDown: "Mėnulis po horizontu. Tempk ekraną, kad sulygintum piešinį su žinoma kryptimi.",
+      today: "Saulė šiandien", moonToday: "Mėnulis šiandien", moonrise: "Mėnulio patekėjimas", moonset: "Mėnulio nusileidimas", maxAlt: "Aukščiausiai",
+      illum: "Apšviesta", phase: "Fazė", moonNeverSets: "Mėnulis virš horizonto visą parą", moonNeverRises: "Mėnulis po horizontu visą parą",
+      phase0: "Jaunatis", phase1: "Augantis pjautuvas", phase2: "Priešpilnis", phase3: "Augantis Mėnulis",
+      phase4: "Pilnatis", phase5: "Dylantis Mėnulis", phase6: "Delčia", phase7: "Dylantis pjautuvas",
       dirs: ["Š","ŠŠR","ŠR","RŠR","R","RPR","PR","PPR","P","PPV","PV","VPV","V","VŠV","ŠV","ŠŠV"],
       locale: "lt-LT"
     }
@@ -93,6 +107,7 @@
     loc: store.get("loc", null),
     cal: Object.assign({ yaw: 0, pitch: 0, fov: 64, auto: true }, store.get("cal", {})),
     solstice: store.get("solstice", false),
+    target: store.get("target", "sun") === "moon" ? "moon" : "sun",
     travel: null, compare: null, eclipse: null, playing: false,
     panel: null, sheet: null,
     view: { yaw: 150, pitch: 15 }, // manual look-around (no sensors)
@@ -132,27 +147,29 @@
 
   // ---------------------------------------------------------------- sun path cache
   const pathCache = new Map();
-  function dayPath(date) {
+  function dayPath(date, body) {
+    body = body || "sun";
+    const pos = body === "moon" ? Astro.moonPosition : Astro.sunPosition;
     const d0 = dayStart(date), d1 = new Date(d0.getFullYear(), d0.getMonth(), d0.getDate() + 1);
-    const key = d0.getTime() + "|" + S.loc.lat.toFixed(4) + "|" + S.loc.lon.toFixed(4);
+    const key = body + "|" + d0.getTime() + "|" + S.loc.lat.toFixed(4) + "|" + S.loc.lon.toFixed(4);
     if (pathCache.has(key)) return pathCache.get(key);
     const pts = [], o = obs();
     for (let tm = d0.getTime(); tm <= d1.getTime(); tm += 120000) {
-      const p = Astro.sunPosition(new Date(tm), o);
+      const p = pos(new Date(tm), o);
       pts.push({ t: tm, az: p.az, alt: p.alt });
     }
     const hours = [];
     for (let h = 0; h < 24; h++) {
       const tm = new Date(d0.getFullYear(), d0.getMonth(), d0.getDate(), h).getTime();
-      const p = Astro.sunPosition(new Date(tm), o);
+      const p = pos(new Date(tm), o);
       hours.push({ h, az: p.az, alt: p.alt });
     }
-    const ev = Astro.sunEvents(d0, o);
-    const rs = [ev.rise, ev.set].map(x => x && Object.assign({ t: x, kind: x === ev.rise ? "rise" : "set" }, Astro.sunPosition(x, o)));
+    const ev = body === "moon" ? Astro.moonEvents(d0, o) : Astro.sunEvents(d0, o);
+    const rs = [ev.rise, ev.set].map(x => x && Object.assign({ t: x, kind: x === ev.rise ? "rise" : "set" }, pos(x, o)));
     let apex = pts[0];
     for (const p of pts) if (p.alt > apex.alt) apex = p;
     const res = { pts, hours, ev, rs: rs.filter(Boolean), apex, date: d0 };
-    if (pathCache.size > 24) pathCache.clear();
+    if (pathCache.size > 40) pathCache.clear();
     pathCache.set(key, res);
     return res;
   }
@@ -290,8 +307,25 @@
     return [W / 2 + F * d[0] / -d[2], H / 2 - F * d[1] / -d[2]];
   }
 
-  function strokePath(points, opts) {
-    // points: [{az, alt}] — draws runs above (solid) and below (dashed) the horizon
+  // ---------------------------------------------------------------- drawing
+  const FONT = 'ui-rounded, "SF Pro Rounded", -apple-system, system-ui, "Segoe UI", sans-serif';
+  const COL = { sun: "#FFC729", sunDeep: "#FF9419", sunLight: "#FFF7D6", moon: "#DBE6F7", compare: "#5CCCFF",
+    june: "#FF8561", dec: "#8FB5FF", north: "#FF6B66" };
+  const bodyColor = () => S.target === "moon" ? COL.moon : COL.sun;
+  const circle = (x, y, r) => { ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); };
+
+  function text(str, x, y, o) {
+    ctx.save();
+    ctx.font = (o.weight || 600) + " " + (o.size || 14) + "px " + FONT;
+    ctx.textAlign = o.align || "center"; ctx.textBaseline = "middle";
+    ctx.globalAlpha = o.alpha ?? 1;
+    ctx.fillStyle = o.color || "#fff";
+    ctx.fillText(str, x, y);
+    ctx.restore();
+  }
+
+  // solid with a soft glow above the horizon, thinner and dashed below
+  function strokePath(points, color, width, dashAlpha) {
     const maxJump = Math.max(W, H) * 1.5;
     const drawRun = (run, dashed) => {
       if (run.length < 2) return;
@@ -303,72 +337,59 @@
         if (!pen) { ctx.moveTo(s[0], s[1]); pen = true; } else ctx.lineTo(s[0], s[1]);
         last = s;
       }
-      ctx.setLineDash(dashed ? opts.dash || [12, 11] : []);
-      ctx.globalAlpha = dashed ? (opts.dashAlpha || 0.8) : 1;
-      ctx.stroke();
+      ctx.save();
+      ctx.strokeStyle = color; ctx.lineCap = "round"; ctx.lineJoin = "round";
+      if (dashed) {
+        ctx.globalAlpha = dashAlpha; ctx.setLineDash([10, 9]); ctx.lineWidth = width * 0.7; ctx.stroke();
+      } else {
+        ctx.globalAlpha = 0.25; ctx.lineWidth = width + 7; ctx.stroke();
+        ctx.globalAlpha = 1; ctx.lineWidth = width; ctx.stroke();
+      }
+      ctx.restore();
     };
-    ctx.save();
-    ctx.strokeStyle = opts.color; ctx.lineWidth = opts.width; ctx.lineCap = "round"; ctx.lineJoin = "round";
-    ctx.shadowColor = "rgba(0,0,0,0.35)"; ctx.shadowBlur = 6;
     let run = [], above = null;
     for (const p of points) {
-      if (p.alt < (opts.minAlt ?? -40)) { if (run.length) drawRun(run, !above); run = []; above = null; continue; }
+      if (p.alt < -35) { if (run.length) drawRun(run, !above); run = []; above = null; continue; }
       const a = p.alt >= 0;
       if (above === null) above = a;
       if (a !== above) { run.push(p); drawRun(run, !above); run = [p]; above = a; }
       else run.push(p);
     }
     if (run.length) drawRun(run, !above);
-    ctx.restore();
-  }
-
-  function text(str, x, y, opts) {
-    ctx.save();
-    ctx.font = (opts.weight || 600) + " " + (opts.size || 14) + "px " + getComputedStyle(document.body).fontFamily;
-    ctx.textAlign = opts.align || "center"; ctx.textBaseline = opts.baseline || "middle";
-    ctx.shadowColor = "rgba(0,0,0,0.6)"; ctx.shadowBlur = 4;
-    ctx.globalAlpha = opts.alpha ?? 1;
-    ctx.fillStyle = opts.color || "#fff";
-    ctx.fillText(str, x, y);
-    ctx.restore();
   }
 
   function drawHorizon(camAz) {
-    const pts = [];
-    for (let a = 0; a <= 360; a += 2) pts.push({ az: a, alt: 0 });
-    // horizon line
     ctx.save();
-    ctx.strokeStyle = "rgba(255,255,255,0.9)"; ctx.lineWidth = 3; ctx.setLineDash([16, 13]);
-    ctx.shadowColor = "rgba(0,0,0,0.35)"; ctx.shadowBlur = 4;
+    ctx.strokeStyle = "rgba(255,255,255,0.85)"; ctx.lineWidth = 2.5; ctx.lineCap = "round"; ctx.setLineDash([14, 12]);
     ctx.beginPath();
     let pen = false, last = null;
-    for (const p of pts) {
-      const s = project(p.az, 0);
+    for (let a = 0; a <= 360; a += 2) {
+      const s = project(a, 0);
       if (!s || (last && Math.abs(s[0] - last[0]) > W * 1.5)) { pen = false; last = s; continue; }
       if (!pen) { ctx.moveTo(s[0], s[1]); pen = true; } else ctx.lineTo(s[0], s[1]);
       last = s;
     }
     ctx.stroke();
     ctx.restore();
-    // ticks and compass labels
+    const dirs = t("dirs");
     for (let a = 0; a < 360; a += 10) {
       const s = project(a, 0);
       if (!s || s[0] < -40 || s[0] > W + 40) continue;
-      const major = a % 45 === 0;
+      const major = a % 45 === 0, north = a === 0;
       ctx.save();
-      ctx.strokeStyle = "rgba(255,255,255," + (major ? 0.9 : 0.45) + ")"; ctx.lineWidth = major ? 2.5 : 1.5;
-      ctx.beginPath(); ctx.moveTo(s[0], s[1] + 8); ctx.lineTo(s[0], s[1] + (major ? 40 : 16)); ctx.stroke();
+      ctx.strokeStyle = north ? COL.north : "#fff"; ctx.globalAlpha = major ? 0.95 : 0.4;
+      ctx.lineWidth = major ? 2.2 : 1.3; ctx.lineCap = "round";
+      ctx.beginPath(); ctx.moveTo(s[0], s[1] + 8); ctx.lineTo(s[0], s[1] + (major ? 34 : 15)); ctx.stroke();
       ctx.restore();
-      if (major) text(t("dirs")[a / 22.5], s[0], s[1] - 22, { size: 22, weight: 600, alpha: 0.95 });
-      else if (a % 30 === 0) text(String(a), s[0], s[1] + 28, { size: 11, weight: 500, alpha: 0.6 });
+      if (major) text(dirs[a / 22.5], s[0], s[1] - 20, { size: a % 90 === 0 ? 22 : 18, weight: 700, color: north ? COL.north : "#fff", alpha: 0.95 });
+      else if (a % 30 === 0) text(a + "°", s[0], s[1] + 26, { size: 11, weight: 500, alpha: 0.55 });
     }
-    // altitude scale on the left edge
     for (const alt of [-30, -15, 15, 30, 45, 60, 75]) {
       const s = project(camAz, alt);
-      if (!s || s[1] < 90 || s[1] > H - 120) continue;
-      ctx.save(); ctx.strokeStyle = "rgba(255,255,255,0.75)"; ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.moveTo(0, s[1]); ctx.lineTo(44, s[1]); ctx.stroke(); ctx.restore();
-      text(alt + "°", 54, s[1], { size: 18, weight: 500, align: "left", alpha: 0.8 });
+      if (!s || s[1] < 120 || s[1] > H - 130) continue;
+      ctx.save(); ctx.strokeStyle = "rgba(255,255,255,0.7)"; ctx.lineWidth = 1.6; ctx.lineCap = "round";
+      ctx.beginPath(); ctx.moveTo(0, s[1]); ctx.lineTo(26, s[1]); ctx.stroke(); ctx.restore();
+      text(alt + "°", 33, s[1], { size: 13, weight: 600, align: "left", alpha: 0.75 });
     }
   }
 
@@ -376,7 +397,7 @@
     const pts = [];
     for (let a = -85; a <= 85; a += 5) { const s = project(camAz + a, 0); if (s) pts.push(s); }
     ctx.save();
-    const g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, "#2A2E35"); g.addColorStop(1, "#121418");
+    const g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, "#292E36"); g.addColorStop(1, "#0F1114");
     ctx.fillStyle = g;
     ctx.beginPath();
     if (pts.length < 2) { if (camAlt < 0) ctx.rect(0, 0, W, H); }
@@ -384,16 +405,15 @@
       pts.sort((p, q) => p[0] - q[0]);
       ctx.moveTo(pts[0][0], pts[0][1]);
       for (const p of pts) ctx.lineTo(p[0], p[1]);
-      const far = 1e5;
-      ctx.lineTo(pts[pts.length - 1][0], far); ctx.lineTo(pts[0][0], far);
+      ctx.lineTo(pts[pts.length - 1][0], 1e5); ctx.lineTo(pts[0][0], 1e5);
     }
     ctx.fill();
     ctx.restore();
   }
 
-  function drawDayPath(dp, color, opts) {
-    strokePath(dp.pts, { color, width: opts.width, dashAlpha: opts.dashAlpha, minAlt: -35 });
-    if (opts.hours) {
+  function drawDayPath(dp, color, o) {
+    strokePath(dp.pts, color, o.width, o.dashAlpha);
+    if (o.hours) {
       const proj = dp.hours.map(h => project(h.az, h.alt));
       dp.hours.forEach((h, i) => {
         if (h.alt < -8) return;
@@ -402,83 +422,127 @@
         const nb = proj[i + 1] || proj[i - 1];
         let nx = 0, ny = 1;
         if (nb) { const tx = nb[0] - s[0], ty = nb[1] - s[1], l = Math.hypot(tx, ty) || 1; nx = -ty / l; ny = tx / l; if (ny < 0) { nx = -nx; ny = -ny; } }
-        ctx.save(); ctx.fillStyle = color; ctx.strokeStyle = "rgba(0,0,0,0.55)"; ctx.lineWidth = 2;
-        ctx.globalAlpha = h.alt < 0 ? 0.7 : 1;
-        ctx.beginPath(); ctx.arc(s[0], s[1], opts.width * 0.9 + 1.5, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); ctx.restore();
-        text(String(h.h).padStart(2, "0"), s[0] + nx * 19, s[1] + ny * 19, { size: 13, weight: 600, color, alpha: h.alt < 0 ? 0.6 : 0.95 });
+        ctx.save();
+        ctx.globalAlpha = h.alt < 0 ? 0.6 : 1;
+        ctx.fillStyle = color; circle(s[0], s[1], o.width + 1.6); ctx.fill();
+        ctx.fillStyle = "#1F1F1F"; circle(s[0], s[1], o.width * 0.42); ctx.fill();
+        ctx.restore();
+        text(String(h.h).padStart(2, "0"), s[0] + nx * 18, s[1] + ny * 18, { size: 12, weight: 700, color, alpha: h.alt < 0 ? 0.55 : 0.95 });
       });
     }
-    if (opts.events) {
+    if (o.events) {
       for (const r of dp.rs) {
         const s = project(r.az, 0);
         if (!s) continue;
-        const up = r.kind === "rise";
-        ctx.save(); ctx.fillStyle = color; ctx.shadowColor = "rgba(0,0,0,0.5)"; ctx.shadowBlur = 4;
-        ctx.beginPath();
-        if (up) { ctx.moveTo(s[0], s[1] - 30); ctx.lineTo(s[0] - 8, s[1] - 18); ctx.lineTo(s[0] + 8, s[1] - 18); }
-        else { ctx.moveTo(s[0], s[1] - 16); ctx.lineTo(s[0] - 8, s[1] - 28); ctx.lineTo(s[0] + 8, s[1] - 28); }
+        ctx.save(); ctx.fillStyle = color; ctx.beginPath();
+        if (r.kind === "rise") { ctx.moveTo(s[0], s[1] - 29); ctx.lineTo(s[0] - 7, s[1] - 18); ctx.lineTo(s[0] + 7, s[1] - 18); }
+        else { ctx.moveTo(s[0], s[1] - 17); ctx.lineTo(s[0] - 7, s[1] - 28); ctx.lineTo(s[0] + 7, s[1] - 28); }
         ctx.fill(); ctx.restore();
-        text(fmtTime(r.t), s[0], s[1] - 44, { size: 14, weight: 600, color });
+        text(fmtTime(r.t), s[0], s[1] - 42, { size: 13, weight: 700, color });
       }
     }
-    if (opts.label) {
+    if (o.label) {
       const s = project(dp.apex.az, dp.apex.alt);
-      if (s && s[1] > 170) text(opts.label, s[0], s[1] - 18, { size: 14, weight: 600, color });
+      if (s && s[1] > 190) text(o.label, s[0], s[1] - 18, { size: 13, weight: 700, color });
     }
   }
 
+  const onScreen = s => s && s[0] > -60 && s[0] < W + 60 && s[1] > -60 && s[1] < H + 60;
+
   function drawSun(pos, when) {
     const s = project(pos.az, pos.alt);
-    const below = pos.alt < -0.83;
-    if (s && s[0] > -60 && s[0] < W + 60 && s[1] > -60 && s[1] < H + 60) {
-      const r = 22;
-      ctx.save();
-      ctx.globalAlpha = below ? 0.55 : 1;
-      ctx.fillStyle = "rgba(255,194,14,0.30)";
-      ctx.beginPath(); ctx.arc(s[0], s[1], r * 1.75, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = "#FFC20E"; ctx.shadowColor = "rgba(0,0,0,0.35)"; ctx.shadowBlur = 8;
-      ctx.beginPath(); ctx.arc(s[0], s[1], r, 0, Math.PI * 2); ctx.fill();
-      ctx.restore();
-      // eclipse: the Moon's disk crossing the marker, scaled with it
-      if (S.eclipse && when >= S.eclipse.c1.getTime() - 1800000 && when <= S.eclipse.c4.getTime() + 1800000) {
-        const md = Astro.sunMoonDisks(new Date(when), obs());
-        const ms = project(md.moon.az, md.moon.alt + (pos.alt - md.sun.alt));
-        if (ms) {
-          const sunPx = F * md.rS * D2R, k = r / sunPx;
-          const mx = s[0] + (ms[0] - s[0]) * k, my = s[1] + (ms[1] - s[1]) * k;
-          ctx.save();
-          ctx.beginPath(); ctx.arc(s[0], s[1], r * 1.75, 0, Math.PI * 2); ctx.clip();
-          ctx.fillStyle = "#15181D"; ctx.strokeStyle = "rgba(255,255,255,0.35)"; ctx.lineWidth = 1;
-          ctx.beginPath(); ctx.arc(mx, my, r * md.rM / md.rS, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-          ctx.restore();
-        }
+    if (!onScreen(s)) return drawEdgeArrow(pos, COL.sun);
+    const [x, y] = s, r = 19;
+    ctx.save();
+    ctx.globalAlpha = pos.alt < -0.83 ? 0.55 : 1;
+    let g = ctx.createRadialGradient(x, y, r * 0.7, x, y, r * 2.8);
+    g.addColorStop(0, "rgba(255,199,41,0.55)"); g.addColorStop(0.45, "rgba(255,199,41,0.16)"); g.addColorStop(1, "rgba(255,199,41,0)");
+    ctx.fillStyle = g; circle(x, y, r * 2.8); ctx.fill();
+    g = ctx.createRadialGradient(x - r * 0.3, y - r * 0.3, 0, x - r * 0.3, y - r * 0.3, r * 1.35);
+    g.addColorStop(0, COL.sunLight); g.addColorStop(0.5, COL.sun); g.addColorStop(1, COL.sunDeep);
+    ctx.fillStyle = g; circle(x, y, r); ctx.fill();
+    ctx.strokeStyle = "rgba(255,255,255,0.75)"; ctx.lineWidth = 1.2; ctx.stroke();
+    ctx.restore();
+    // eclipse: the Moon crossing the marker, scaled with it
+    if (S.eclipse && when >= S.eclipse.c1.getTime() - 1800000 && when <= S.eclipse.c4.getTime() + 1800000) {
+      const md = Astro.sunMoonDisks(new Date(when), obs());
+      const ms = project(md.moon.az, md.moon.alt + (pos.alt - md.sun.alt));
+      if (ms) {
+        const k = r / (F * md.rS * D2R);
+        const mx = x + (ms[0] - x) * k, my = y + (ms[1] - y) * k;
+        ctx.save();
+        circle(x, y, r * 2.8); ctx.clip();
+        ctx.fillStyle = "#12141A"; ctx.strokeStyle = "rgba(255,255,255,0.35)"; ctx.lineWidth = 1;
+        circle(mx, my, r * md.rM / md.rS); ctx.fill(); ctx.stroke();
+        ctx.restore();
       }
-      return;
     }
-    // off-screen: arrow at the edge pointing towards the sun
+  }
+
+  // the Moon with its real phase, lit side towards the Sun
+  function drawMoon(pos, sun, when) {
+    const s = project(pos.az, pos.alt);
+    if (!onScreen(s)) return drawEdgeArrow(pos, COL.moon);
+    const [x, y] = s, r = 19;
+    const ph = Astro.moonPhase(when);
+    const mc = applyT(CAM, worldVec(pos.az, pos.alt)), sc = applyT(CAM, worldVec(sun.az, sun.alt));
+    const dot = mc[0] * sc[0] + mc[1] * sc[1] + mc[2] * sc[2];
+    const ang = Math.atan2(-(sc[1] - dot * mc[1]), sc[0] - dot * mc[0]);
+    ctx.save();
+    ctx.globalAlpha = pos.alt < -0.83 ? 0.55 : 1;
+    let g = ctx.createRadialGradient(x, y, r * 0.8, x, y, r * 2.6);
+    g.addColorStop(0, `rgba(219,230,247,${0.1 + 0.25 * ph.illum})`); g.addColorStop(1, "rgba(219,230,247,0)");
+    ctx.fillStyle = g; circle(x, y, r * 2.6); ctx.fill();
+    ctx.fillStyle = "rgba(33,38,48,0.92)"; circle(x, y, r); ctx.fill();
+    const k = ph.illum, n = 40;
+    ctx.beginPath();
+    for (let i = 0; i <= n; i++) {
+      const th = -Math.PI / 2 + Math.PI * i / n, px = r * Math.cos(th), py = r * Math.sin(th);
+      ctx.lineTo(x + px * Math.cos(ang) - py * Math.sin(ang), y + px * Math.sin(ang) + py * Math.cos(ang));
+    }
+    for (let i = 0; i <= n; i++) {
+      const th = Math.PI / 2 - Math.PI * i / n, px = -(2 * k - 1) * r * Math.cos(th), py = r * Math.sin(th);
+      ctx.lineTo(x + px * Math.cos(ang) - py * Math.sin(ang), y + px * Math.sin(ang) + py * Math.cos(ang));
+    }
+    ctx.closePath();
+    g = ctx.createRadialGradient(x, y, 0, x, y, r);
+    g.addColorStop(0, "#FFFFFF"); g.addColorStop(1, "#E0E5EE");
+    ctx.fillStyle = g; ctx.fill();
+    ctx.strokeStyle = "rgba(255,255,255,0.5)"; ctx.lineWidth = 1; circle(x, y, r); ctx.stroke();
+    ctx.restore();
+  }
+
+  // off screen: a small marker at the edge with an arrow towards the body
+  function drawEdgeArrow(pos, color) {
     const d = applyT(CAM, worldVec(pos.az, pos.alt));
     let dx = d[0], dy = -d[1];
     if (Math.hypot(dx, dy) < 1e-6) dx = 1;
     const n = Math.hypot(dx, dy); dx /= n; dy /= n;
-    const mx = W / 2 - 46, my = H / 2 - 150;
+    const mx = W / 2 - 44, my = H / 2 - 160;
     const k = Math.min(mx / Math.abs(dx || 1e-9), my / Math.abs(dy || 1e-9));
-    const x = W / 2 + dx * k, y = H / 2 + dy * k, ang = Math.atan2(dy, dx);
+    const x = W / 2 + dx * k, y = H / 2 + dy * k;
     ctx.save();
     ctx.translate(x, y);
-    ctx.globalAlpha = below ? 0.55 : 0.95;
-    ctx.fillStyle = "#FFC20E"; ctx.shadowColor = "rgba(0,0,0,0.5)"; ctx.shadowBlur = 6;
-    ctx.beginPath(); ctx.arc(0, 0, 11, 0, Math.PI * 2); ctx.fill();
-    ctx.rotate(ang);
-    ctx.beginPath(); ctx.moveTo(30, 0); ctx.lineTo(17, -9); ctx.lineTo(17, 9); ctx.closePath(); ctx.fill();
+    ctx.globalAlpha = pos.alt < -0.83 ? 0.55 : 1;
+    ctx.shadowColor = "rgba(0,0,0,0.45)"; ctx.shadowBlur = 8;
+    ctx.fillStyle = color; circle(0, 0, 13); ctx.fill();
+    ctx.shadowBlur = 0; ctx.strokeStyle = "rgba(255,255,255,0.8)"; ctx.lineWidth = 1.5; ctx.stroke();
+    ctx.rotate(Math.atan2(dy, dx));
+    ctx.beginPath(); ctx.moveTo(29, 0); ctx.lineTo(19, -7); ctx.lineTo(19, 7); ctx.closePath(); ctx.fill();
     ctx.restore();
   }
 
+  // thin crosshair with an open centre; a coloured ring while calibrating
   function drawCrosshair(strong) {
+    const cx = W / 2, cy = H / 2, inner = strong ? 26 : 9, outer = strong ? 48 : 64;
     ctx.save();
-    ctx.strokeStyle = strong ? "rgba(255,194,14,0.95)" : "rgba(255,255,255,0.75)"; ctx.lineWidth = strong ? 2 : 1.5;
-    const L = strong ? 46 : 86, cx = W / 2, cy = H / 2;
-    ctx.beginPath(); ctx.moveTo(cx - L, cy); ctx.lineTo(cx + L, cy); ctx.moveTo(cx, cy - L); ctx.lineTo(cx, cy + L); ctx.stroke();
-    if (strong) { ctx.beginPath(); ctx.arc(cx, cy, 22, 0, Math.PI * 2); ctx.stroke(); }
+    ctx.strokeStyle = strong ? bodyColor() : "rgba(255,255,255,0.7)"; ctx.lineWidth = strong ? 2 : 1.4; ctx.lineCap = "round";
+    ctx.shadowColor = "rgba(0,0,0,0.35)"; ctx.shadowBlur = 4;
+    ctx.beginPath();
+    ctx.moveTo(cx - outer, cy); ctx.lineTo(cx - inner, cy); ctx.moveTo(cx + inner, cy); ctx.lineTo(cx + outer, cy);
+    ctx.moveTo(cx, cy - outer); ctx.lineTo(cx, cy - inner); ctx.moveTo(cx, cy + inner); ctx.lineTo(cx, cy + outer);
+    ctx.stroke();
+    if (strong) { circle(cx, cy, 20); ctx.stroke(); }
     ctx.restore();
   }
 
@@ -510,32 +574,40 @@
     ctx.clearRect(0, 0, W, H);
     const when = now();
     const o = obs();
+    const moon = S.target === "moon";
 
     if (video.hidden) drawGround(camAz, camAlt);
-    if (S.solstice) {
+    // lines and labels share one soft shadow
+    ctx.save();
+    ctx.shadowColor = "rgba(0,0,0,0.45)"; ctx.shadowBlur = 5;
+    if (S.solstice && !moon) {
       const sp = seasonPaths(when.getFullYear());
-      drawDayPath(sp.jun, "#FF8A50", { width: 3, dashAlpha: 0.5, label: fmtShortDate(sp.dates.june) });
-      drawDayPath(sp.dec, "#82B1FF", { width: 3, dashAlpha: 0.5, label: fmtShortDate(sp.dates.december) });
-      drawDayPath(sp.equ, "rgba(255,255,255,0.75)", { width: 2, dashAlpha: 0.4, label: t("equinox") });
+      drawDayPath(sp.jun, COL.june, { width: 2.5, dashAlpha: 0.45, label: fmtShortDate(sp.dates.june) });
+      drawDayPath(sp.dec, COL.dec, { width: 2.5, dashAlpha: 0.45, label: fmtShortDate(sp.dates.december) });
+      drawDayPath(sp.equ, "rgba(255,255,255,0.7)", { width: 1.8, dashAlpha: 0.35, label: t("equinox") });
     }
     drawHorizon(camAz);
-    if (S.compare) drawDayPath(dayPath(S.compare), "#4FC3F7", { width: 4, hours: true, events: true, label: fmtShortDate(S.compare) });
-    const dp = dayPath(when);
-    drawDayPath(dp, "#FFC20E", { width: 5, hours: true, events: true, label: S.compare ? fmtShortDate(when) : null });
-    const sp = Astro.sunPosition(when, o);
-    drawSun(sp, when.getTime());
+    if (S.compare) drawDayPath(dayPath(S.compare, S.target), COL.compare, { width: 3.5, dashAlpha: 0.7, hours: true, events: true, label: fmtShortDate(S.compare) });
+    drawDayPath(dayPath(when, S.target), bodyColor(), { width: 4.5, dashAlpha: 0.75, hours: true, events: true, label: S.compare ? fmtShortDate(when) : null });
+    ctx.restore();
+
+    const sun = Astro.sunPosition(when, o);
+    const bp = moon ? Astro.moonPosition(when, o) : sun;
+    if (moon) drawMoon(bp, sun, when); else drawSun(sun, when.getTime());
     drawCrosshair(S.panel === "calibrate");
 
     autoAlign(ts);
-    if (ts - lastHud > 150) { lastHud = ts; updateHud(camAz, camAlt, sp, when); }
+    if (ts - lastHud > 150) { lastHud = ts; updateHud(camAz, camAlt, bp, when); }
   }
 
   function updateHud(camAz, camAlt, sp, when) {
     $("headingTxt").textContent = dirName(camAz);
     $("headingDeg").textContent = Math.round(norm360(camAz)) + "° · " + (camAlt >= 0 ? "+" : "") + Math.round(camAlt) + "°";
-    let r = "☀ " + Math.round(sp.az) + "° · " + sp.alt.toFixed(1) + "°";
+    let r = Math.round(sp.az) % 360 + "° · " + sp.alt.toFixed(1) + "°";
+    if (S.target === "moon") r += " · " + Math.round(Astro.moonPhase(when).illum * 100) + "%";
     if (S.travel) r = fmtShortDate(when) + " " + fmtTime(when) + "  ·  " + r;
-    $("readout").textContent = r;
+    $("readoutTxt").textContent = r;
+    $("readout").dataset.body = S.target;
     const chip = $("modeChip"), cs = compassState();
     let msg = null, cls = "chip warn";
     if (S.travel && S.panel !== "travel") msg = "⏱ " + t("timeTravel");
@@ -544,7 +616,7 @@
     else if (cs === "gyro") { msg = t("gyroOnly"); cls = "chip alert"; }
     else if (cs === "none") { msg = t("noCompass"); cls = "chip alert"; }
     else if (cs === "manual") msg = t("manual");
-    chip.hidden = !msg; if (msg) { chip.textContent = msg; chip.className = cls; }
+    chip.hidden = !msg; if (msg) { chip.textContent = msg; chip.className = cls + " glass"; }
     if (S.panel === "calibrate") syncCalibrate();
   }
 
@@ -566,8 +638,8 @@
   cv.addEventListener("pointerup", e => {
     // a tap (not a drag) in calibrate mode: "this is where the real sun is"
     if (drag && S.panel === "calibrate" && !O.manual && Math.hypot(e.clientX - drag.x0, e.clientY - drag.y0) < 10) {
-      const sun = Astro.sunPosition(new Date(), obs());
-      if (sun.alt > -0.5) { alignPointToSun(e.clientX, e.clientY, sun); toast(t("aligned")); }
+      const p = trackedBodyUp();
+      if (p) { alignPointToSun(e.clientX, e.clientY, p); toast(t(S.target === "moon" ? "alignedMoon" : "aligned")); }
     }
     endDrag();
   }); cv.addEventListener("pointercancel", endDrag);
@@ -581,8 +653,21 @@
     toastTimer = setTimeout(() => { el.style.opacity = 0; setTimeout(() => { el.hidden = true; }, 260); }, ms || 2600);
   }
   function openMenu() {
-    $("stTravel").hidden = !S.travel; $("stCompare").hidden = !S.compare; $("stSolstice").hidden = !S.solstice;
+    $("stTravel").classList.toggle("on", !!S.travel); $("stCompare").classList.toggle("on", !!S.compare);
+    $("stSolstice").classList.toggle("on", !!S.solstice);
     $("menu").hidden = false;
+  }
+  function setTarget(b) {
+    if (S.target === b) return;
+    S.target = b; store.set("target", b);
+    $("bodySwitch").dataset.on = b;
+    if (b === "moon") {
+      const ph = Astro.moonPhase(now());
+      toast(t("moon") + " · " + t("phase" + ph.index) + " · " + Math.round(ph.illum * 100) + "%");
+    } else toast(t("sun"));
+    if (S.panel === "compare") syncCompare();
+    if (S.panel === "calibrate") syncCalibrate();
+    if (navigator.vibrate) navigator.vibrate(8);
   }
   const closeMenu = () => { $("menu").hidden = true; };
   function openSheet(html, onMount) {
@@ -692,14 +777,18 @@
   function syncCompare() {
     const el = $("panelBody"); if (S.panel !== "compare" || !S.compare) return;
     el.querySelector("#cmpDate").value = dateInputValue(S.compare);
-    const a = dayPath(now()).ev, b = dayPath(S.compare).ev;
+    const moon = S.target === "moon";
+    const a = dayPath(now(), S.target).ev, b = dayPath(S.compare, S.target).ev;
     const len = ev => ev.state === "normal" ? fmtDur(ev.dayLengthMs) : t(ev.state);
+    const lit = d => Math.round(Astro.moonPhase(d).illum * 100) + "%";
+    const row = (k, x, y) => `<span class="lbl">${esc(t(k))}</span><span>${esc(x)}</span><span>${esc(y)}</span>`;
     el.querySelector("#cmpTable").innerHTML = `
-      <span></span><b class="c1">${esc(fmtShortDate(now()))}</b><b class="c2">${esc(fmtShortDate(S.compare))}</b>
-      <span class="lbl">${esc(t("sunrise"))}</span><span>${fmtTime(a.rise)}</span><span>${fmtTime(b.rise)}</span>
-      <span class="lbl">${esc(t("sunset"))}</span><span>${fmtTime(a.set)}</span><span>${fmtTime(b.set)}</span>
-      <span class="lbl">${esc(t("noonAlt"))}</span><span>${fmtDeg(a.noonAlt, 1)}</span><span>${fmtDeg(b.noonAlt, 1)}</span>
-      <span class="lbl">${esc(t("daylength"))}</span><span>${esc(len(a))}</span><span>${esc(len(b))}</span>`;
+      <span></span><b class="c1">${esc(fmtShortDate(now()))}</b><b class="c2">${esc(fmtShortDate(S.compare))}</b>` + (moon
+      ? row("moonrise", fmtTime(a.rise), fmtTime(b.rise)) + row("moonset", fmtTime(a.set), fmtTime(b.set)) +
+        row("maxAlt", fmtDeg(a.noonAlt, 1), fmtDeg(b.noonAlt, 1)) + row("illum", lit(now()), lit(S.compare))
+      : row("sunrise", fmtTime(a.rise), fmtTime(b.rise)) + row("sunset", fmtTime(a.set), fmtTime(b.set)) +
+        row("noonAlt", fmtDeg(a.noonAlt, 1), fmtDeg(b.noonAlt, 1)) + row("daylength", len(a), len(b)));
+    el.querySelector("#cmpTable").classList.toggle("moon", moon);
   }
 
   // ---------------------------------------------------------------- Calibrate
@@ -724,9 +813,10 @@
   }
   function syncCalibrate() {
     const el = $("panelBody"); if (S.panel !== "calibrate") return;
-    const sun = Astro.sunPosition(new Date(), obs());
-    const up = sun.alt > -0.5;
-    el.querySelector("#calHelp").textContent = (up ? t("calHelp") : t("calHelpNight")) + (compassState() === "compass" ? "" : " " + t("figure8"));
+    const up = !!trackedBodyUp(), moon = S.target === "moon";
+    el.querySelector("#calHelp").textContent = (moon ? t(up ? "calHelpMoon" : "calHelpMoonDown") : t(up ? "calHelp" : "calHelpNight"))
+      + (compassState() === "compass" ? "" : " " + t("figure8"));
+    el.querySelector("#calSun").textContent = t(moon ? "alignMoon" : "alignSun");
     el.querySelector("#calSun").disabled = !up || O.manual;
     el.querySelector("#calOff").textContent = t("offset") + " " + (S.cal.yaw >= 0 ? "+" : "") + S.cal.yaw.toFixed(1) + "° / " + (S.cal.pitch >= 0 ? "+" : "") + S.cal.pitch.toFixed(1) + "°";
     const fv = el.querySelector("#calFov"); if (document.activeElement !== fv) fv.value = S.cal.fov;
@@ -750,9 +840,16 @@
     O.q = null;
     syncCalibrate();
   }
+  // live (not time-travel) position of the tracked body, if it is above the horizon
+  function trackedBodyUp() {
+    const p = (S.target === "moon" ? Astro.moonPosition : Astro.sunPosition)(new Date(), obs());
+    return p.alt > -0.5 ? p : null;
+  }
   function alignToSun() {
-    alignPointToSun(W / 2, H / 2, Astro.sunPosition(new Date(), obs()));
-    toast(t("aligned"));
+    const p = trackedBodyUp();
+    if (!p) return;
+    alignPointToSun(W / 2, H / 2, p);
+    toast(t(S.target === "moon" ? "alignedMoon" : "aligned"));
   }
 
   // Find the sun in the camera image: the largest compact blob of saturated pixels.
@@ -797,22 +894,27 @@
   function autoAlign(ts) {
     if (!S.cal.auto || O.manual || !O.Rdev || video.hidden || S.panel === "calibrate" || ts - det.last < 400) return;
     det.last = ts;
-    const sun = Astro.sunPosition(new Date(), obs());
-    if (sun.alt < 1 || S.loc.src === "approx") { det.prev = null; return; }
+    const nowD = new Date(), sun = Astro.sunPosition(nowD, obs());
+    const cands = [];
+    if (sun.alt > 1) cands.push(sun);
+    if (sun.altGeo < -3) { const mo = Astro.moonPosition(nowD, obs()); if (mo.alt > 1) cands.push(mo); }
+    if (!cands.length || S.loc.src === "approx") { det.prev = null; return; }
     const blob = findSunInVideo();
     if (!blob) { det.prev = null; return; }
     const R = cameraMatrix(true), p = screenDir(blob.x, blob.y, R);
-    const err = Math.hypot(wrap180(sun.az - p.az) * Math.cos(sun.alt * D2R), sun.alt - p.alt);
+    const errOf = b => Math.hypot(wrap180(b.az - p.az) * Math.cos(b.alt * D2R), b.alt - p.alt);
+    const body = cands.reduce((x, y) => errOf(x) <= errOf(y) ? x : y);
+    const err = errOf(body);
     // first alignment may correct a large compass error; afterwards only small drift
     if (err > (det.aligned ? 6 : 35)) { det.prev = null; return; }
     // the detection must be steady in the sky for ~1 s (phone held still, not a passing reflection)
     const steady = det.prev && Math.hypot(wrap180(p.az - det.prev.az) * Math.cos(p.alt * D2R), p.alt - det.prev.alt) < 0.8;
     det.prev = steady ? Object.assign(p, { n: det.prev.n + 1 }) : Object.assign(p, { n: 1 });
     if (det.prev.n < 3 || err < 0.4) return;
-    alignPointToSun(blob.x, blob.y, sun);
+    alignPointToSun(blob.x, blob.y, body);
     det.prev = null;
     det.aligned = true;
-    if (!det.announced) { det.announced = true; toast(t("autoAligned"), 3500); }
+    if (!det.announced) { det.announced = true; toast(t(body === sun ? "autoAligned" : "autoAlignedMoon"), 3500); }
   }
 
   // ---------------------------------------------------------------- Eclipses
@@ -823,10 +925,11 @@
     const dx = wrap180(md.moon.az - md.sun.az) * Math.cos(md.sun.alt * D2R) * k, dy = -(md.moon.alt - md.sun.alt) * k;
     return `<svg viewBox="-32 -32 64 64" width="64" height="64" aria-hidden="true">
       <defs><clipPath id="c${E.max.getTime()}"><circle r="30"/></clipPath></defs>
-      <circle r="${R}" fill="#FFC20E"/><g clip-path="url(#c${E.max.getTime()})"><circle cx="${dx.toFixed(2)}" cy="${dy.toFixed(2)}" r="${(R * md.rM / md.rS).toFixed(2)}" fill="#2C2C2E" stroke="rgba(255,255,255,.25)"/></g></svg>`;
+      <defs><radialGradient id="g${E.max.getTime()}" cx="40%" cy="40%" r="65%"><stop offset="0" stop-color="#FFF7D6"/><stop offset=".5" stop-color="#FFC729"/><stop offset="1" stop-color="#FF9419"/></radialGradient></defs>
+      <circle r="${R}" fill="url(#g${E.max.getTime()})"/><g clip-path="url(#c${E.max.getTime()})"><circle cx="${dx.toFixed(2)}" cy="${dy.toFixed(2)}" r="${(R * md.rM / md.rS).toFixed(2)}" fill="#1C1F26" stroke="rgba(255,255,255,.25)"/></g></svg>`;
   }
   function openEclipses() {
-    openSheet(`<h2>${esc(t("eclTitle"))}</h2><p>${esc(t("eclIntro"))}</p><div id="eclList"><div class="empty">${esc(t("calcing"))}</div></div>`);
+    openSheet(`<h2>${esc(t("eclTitle"))}</h2><p class="intro">${esc(t("eclIntro"))}</p><div id="eclList"><div class="empty">${esc(t("calcing"))}</div></div>`);
     setTimeout(() => {
       const key = S.loc.lat.toFixed(2) + "|" + S.loc.lon.toFixed(2) + "|" + dayStart(new Date()).getTime();
       if (!eclCache || eclCache.key !== key) eclCache = { key, list: Astro.upcomingEclipses(new Date(), obs(), 8, 30) };
@@ -838,8 +941,9 @@
         const notes = [E.risesEclipsed ? t("risesE") : "", E.setsEclipsed ? t("setsE") : ""].filter(Boolean).join(" · ");
         return `<button class="ecl" data-i="${i}">${eclipseDiagram(E)}<div>
           <div class="t1">${esc(fmtLongDate(E.max))}</div>
-          <div class="t2">${esc(t(E.global))} · ${esc(here)} · ${Math.round(E.obscuration * 100)}% ${esc(t("obsc"))}</div>
-          <div class="t2">${fmtTime(E.c1)} → ${fmtTime(E.max)} → ${fmtTime(E.c4)} · ${esc(t("sunAlt"))} ${fmtDeg(E.sunAltMax)}</div>
+          <div class="t2">${esc(t(E.global))} · ${esc(here)}</div>
+          <div class="t4">${fmtTime(E.c1)} → ${fmtTime(E.max)} → ${fmtTime(E.c4)}</div>
+          <div class="t2">${Math.round(E.obscuration * 100)}% ${esc(t("obsc"))} · ${esc(t("sunAlt"))} ${fmtDeg(E.sunAltMax)}</div>
           ${notes ? `<div class="t3">${esc(notes)}</div>` : `<div class="t3">${esc(t("showSky"))} ›</div>`}
         </div></button>`;
       }).join("");
@@ -853,31 +957,40 @@
 
   // ---------------------------------------------------------------- About / status
   function openAbout() {
-    const o = obs(), ev = dayPath(new Date()).ev, cs = compassState();
+    const o = obs(), d = new Date(), ev = dayPath(d).ev, mev = dayPath(d, "moon").ev, ph = Astro.moonPhase(d), cs = compassState();
     const locSrc = S.loc.src === "gps" ? t("gps") : S.loc.src === "manual" ? t("manualLoc") : t("approxLoc");
+    const kv = (k, v) => `<dt>${esc(t(k))}</dt><dd>${v}</dd>`;
+    const mState = st => st === "polarDay" ? t("moonNeverSets") : t("moonNeverRises");
     openSheet(`
-      <h2>${esc(t("about"))}</h2>
-      <h3>${esc(t("howTitle"))}</h3><p>${esc(t("how"))}</p>
-      <h3>${esc(t("offlineTitle"))}</h3><p>${esc(t("offline"))}</p>
-      <h3>${esc(t("sensorsTitle"))}</h3><p>${esc(t("sensors"))}</p>
-      <h3>${esc(t("accTitle"))}</h3><p>${esc(t("acc"))}</p>
-      <h3>${esc(t("status"))}</h3>
-      <dl class="kv">
-        <dt>${esc(t("location"))}</dt><dd>${o.lat.toFixed(4)}, ${o.lon.toFixed(4)}<br><span style="color:var(--muted);font-size:13px">${esc(locSrc)}</span></dd>
-        <dt>${esc(t("compass"))}</dt><dd>${esc({ compass: t("cmpGood"), gyro: t("cmpGyro"), none: t("cmpNone"), manual: t("cmpManual") }[cs])}</dd>
-        <dt>${esc(t("declination"))}</dt><dd>${(O.decl >= 0 ? "+" : "") + O.decl.toFixed(1)}°</dd>
-        <dt>${esc(t("calibration"))}</dt><dd>${(S.cal.yaw >= 0 ? "+" : "") + S.cal.yaw.toFixed(1)}° / ${(S.cal.pitch >= 0 ? "+" : "") + S.cal.pitch.toFixed(1)}° · FOV ${S.cal.fov.toFixed(0)}°${O.rawHeading !== undefined ? " · mag " + Math.round(O.rawHeading) + "°" + (O.acc !== null ? " ±" + Math.round(O.acc) : "") : ""}</dd>
-        <dt>${esc(t("sunrise"))}</dt><dd>${fmtTime(ev.rise)}</dd>
-        <dt>${esc(t("noon"))}</dt><dd>${fmtTime(ev.noon)} · ${fmtDeg(ev.noonAlt, 1)}</dd>
-        <dt>${esc(t("sunset"))}</dt><dd>${fmtTime(ev.set)}</dd>
-        <dt>${esc(t("daylength"))}</dt><dd>${ev.state === "normal" ? fmtDur(ev.dayLengthMs) : esc(t(ev.state))}</dd>
+      <h2><span class="ico sun"></span>${esc(t("about"))}</h2>
+      <section class="card"><h3><span class="ico sun"></span>${esc(t("today"))}</h3><dl class="kv">
+        ${kv("sunrise", fmtTime(ev.rise))}${kv("noon", fmtTime(ev.noon) + " · " + fmtDeg(ev.noonAlt, 1))}
+        ${kv("sunset", fmtTime(ev.set))}${kv("daylength", ev.state === "normal" ? fmtDur(ev.dayLengthMs) : esc(t(ev.state)))}
+      </dl></section>
+      <section class="card"><h3><span class="ico moon"></span>${esc(t("moonToday"))}</h3><dl class="kv">
+        ${kv("phase", esc(t("phase" + ph.index)) + " · " + Math.round(ph.illum * 100) + "%")}
+        ${kv("moonrise", mev.state === "normal" ? fmtTime(mev.rise) : esc(mState(mev.state)))}
+        ${kv("moonset", mev.state === "normal" ? fmtTime(mev.set) : esc(mState(mev.state)))}
+        ${kv("maxAlt", fmtTime(mev.noon) + " · " + fmtDeg(mev.noonAlt, 1))}
+      </dl></section>
+      <section class="card"><h3><span class="ico gauge"></span>${esc(t("status"))}</h3><dl class="kv">
+        ${kv("location", o.lat.toFixed(4) + ", " + o.lon.toFixed(4) + `<br><span class="mut">${esc(locSrc)}</span>`)}
+        ${kv("compass", esc({ compass: t("cmpGood"), gyro: t("cmpGyro"), none: t("cmpNone"), manual: t("cmpManual") }[cs]))}
+        ${kv("declination", (O.decl >= 0 ? "+" : "") + O.decl.toFixed(1) + "°")}
+        ${kv("calibration", (S.cal.yaw >= 0 ? "+" : "") + S.cal.yaw.toFixed(1) + "° / " + (S.cal.pitch >= 0 ? "+" : "") + S.cal.pitch.toFixed(1) + "° · FOV " + S.cal.fov.toFixed(0) + "°")}
       </dl>
-      <div class="row" style="margin-top:14px" id="locRow"><button class="btn small" id="locEdit">${esc(t("edit"))}</button><button class="btn small" id="locGps">${esc(t("useGps"))}</button></div>
+      <div class="row" style="margin-top:12px"><button class="btn small" id="locEdit">${esc(t("edit"))}</button><button class="btn small" id="locGps">${esc(t("useGps"))}</button></div>
       <div id="locForm" hidden style="margin-top:12px">
         <div class="row"><label class="field">${esc(t("lat"))}<input id="locLat" inputmode="decimal" value="${o.lat.toFixed(5)}"></label>
         <label class="field">${esc(t("lon"))}<input id="locLon" inputmode="decimal" value="${o.lon.toFixed(5)}"></label></div>
         <div class="row" style="margin-top:10px"><button class="btn primary small" id="locSave">${esc(t("save"))}</button></div>
-      </div>`,
+      </div></section>
+      <section class="card">
+        <h4>${esc(t("howTitle"))}</h4><p>${esc(t("how"))}</p>
+        <h4>${esc(t("offlineTitle"))}</h4><p>${esc(t("offline"))}</p>
+        <h4>${esc(t("sensorsTitle"))}</h4><p>${esc(t("sensors"))}</p>
+        <h4>${esc(t("accTitle"))}</h4><p>${esc(t("acc"))}</p>
+      </section>`,
       el => {
         el.querySelector("#locEdit").onclick = () => { el.querySelector("#locForm").hidden = false; };
         el.querySelector("#locGps").onclick = () => { requestLocation(true); closeSheet(); };
@@ -889,9 +1002,9 @@
   }
 
   function openLanguage() {
-    openSheet(`<h2>${esc(t("language"))}</h2>
+    openSheet(`<h2><span class="ico globe"></span>${esc(t("language"))}</h2><section class="card list">
       <button class="choice" data-l="en">English <span class="tick">${S.lang === "en" ? "✓" : ""}</span></button>
-      <button class="choice" data-l="lt">Lietuvių <span class="tick">${S.lang === "lt" ? "✓" : ""}</span></button>`,
+      <button class="choice" data-l="lt">Lietuvių <span class="tick">${S.lang === "lt" ? "✓" : ""}</span></button></section>`,
       el => el.querySelectorAll("[data-l]").forEach(b => b.onclick = () => { setLang(b.dataset.l); closeSheet(); }));
   }
   function setLang(l) { S.lang = l; store.set("lang", l); applyI18n(); }
@@ -973,6 +1086,8 @@
   $("startBtn").onclick = start;
   $("startLang").onclick = () => setLang(S.lang === "lt" ? "en" : "lt");
   $("btnMenu").onclick = openMenu;
+  $("bodySwitch").dataset.on = S.target;
+  $("bodySwitch").querySelectorAll("[data-b]").forEach(b => { b.onclick = () => setTarget(b.dataset.b); });
   $("btnInfo").onclick = openAbout;
   $("btnShot").onclick = takePhoto;
   $("headingPill").onclick = () => { if (S.travel) openTravel(); };
