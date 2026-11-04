@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Sun Path">
+<meta name="theme-color" content="#0B0D10">
+<meta name="description" content="See the sun's path across your sky through the camera — any date, solstices and upcoming eclipses. Works offline.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<title>Sun Path</title>
+<style>
+/* Layout: full-screen camera with a canvas overlay; floating HUD on top (heading pill, readout),
+   round controls at the bottom, a centred action menu, bottom sheets and bottom tool panels. */
+:root {
+  --sun: #FFC20E;
+  --sun-soft: rgba(255, 194, 14, 0.32);
+  --compare: #4FC3F7;
+  --ink: #FFFFFF;
+  --muted: rgba(235, 235, 245, 0.62);
+  --glass: rgba(28, 28, 30, 0.72);
+  --glass-strong: rgba(28, 28, 30, 0.94);
+  --btn: rgba(118, 118, 128, 0.30);
+  --btn-press: rgba(118, 118, 128, 0.48);
+  --sheet: #1C1C1E;
+  --line: rgba(84, 84, 88, 0.55);
+  --danger: #FF6B5E;
+  --ok: #4CD964;
+  --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, system-ui, sans-serif;
+  --safe-t: env(safe-area-inset-top, 0px);
+  --safe-b: env(safe-area-inset-bottom, 0px);
+  color-scheme: dark;
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; height: 100%; overflow: hidden; background: #0B0D10; color: var(--ink); font-family: var(--font); -webkit-user-select: none; user-select: none; overscroll-behavior: none; }
+button { font: inherit; color: inherit; border: 0; background: none; cursor: pointer; }
+input { font: inherit; }
+[hidden] { display: none !important; }
+
+#sky { position: fixed; inset: 0; background: linear-gradient(#0E1C33 0%, #2B4A73 50%, #7E9DBE 100%); }
+#cam { position: fixed; inset: 0; width: 100%; height: 100%; object-fit: cover; background: transparent; }
+#overlay { position: fixed; inset: 0; width: 100%; height: 100%; touch-action: none; }
+
+/* HUD */
+#hud { position: fixed; left: 0; right: 0; top: calc(var(--safe-t) + 14px); display: flex; flex-direction: column; align-items: center; gap: 8px; pointer-events: none; }
+.pill { pointer-events: auto; min-width: 112px; padding: 10px 22px 9px; border-radius: 26px; background: var(--glass); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); font-size: 26px; font-weight: 600; letter-spacing: 0.5px; text-align: center; line-height: 1.1; }
+.pill small { display: block; font-size: 12px; font-weight: 500; color: var(--muted); letter-spacing: 0; margin-top: 1px; font-variant-numeric: tabular-nums; }
+.chip { padding: 6px 12px; border-radius: 14px; background: var(--glass); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); font-size: 13px; font-weight: 500; font-variant-numeric: tabular-nums; color: rgba(255,255,255,0.92); }
+.chip.warn { color: #1B1300; background: var(--sun); }
+.chip.alert { color: #fff; background: rgba(200, 60, 45, 0.85); }
+
+/* Bottom controls */
+#bottombar { position: fixed; left: 0; right: 0; bottom: calc(var(--safe-b) + 18px); display: flex; align-items: center; gap: 18px; padding: 0 24px; pointer-events: none; }
+#bottombar .spacer { flex: 1; }
+.round { pointer-events: auto; width: 54px; height: 54px; border-radius: 50%; display: grid; place-items: center; background: rgba(12, 12, 14, 0.62); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
+.round.big { width: 66px; height: 66px; }
+.round:active { transform: scale(0.94); }
+.round svg { width: 30px; height: 30px; }
+.round.big svg { width: 32px; height: 32px; }
+
+/* Action menu */
+.scrim { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.42); display: grid; place-items: center; padding: 16px; z-index: 20; }
+.menu { width: min(100%, 340px); padding: 16px; border-radius: 30px; background: rgba(40, 40, 40, 0.80); backdrop-filter: blur(24px) saturate(1.4); -webkit-backdrop-filter: blur(24px) saturate(1.4); border: 1px solid rgba(255, 255, 255, 0.10); display: flex; flex-direction: column; gap: 10px; box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
+.menu button { position: relative; height: 50px; border-radius: 25px; background: var(--btn); font-size: 17px; font-weight: 500; display: flex; align-items: center; justify-content: center; }
+.menu button:active { background: var(--btn-press); }
+.menu button svg { position: absolute; left: 16px; width: 22px; height: 22px; }
+.menu button .state { position: absolute; right: 16px; width: 8px; height: 8px; border-radius: 50%; background: var(--sun); }
+
+/* Sheets */
+.sheet-wrap { position: fixed; inset: 0; z-index: 30; background: rgba(0, 0, 0, 0.35); display: flex; align-items: flex-end; justify-content: center; }
+.sheet { width: min(100%, 560px); max-height: 82vh; overflow-y: auto; background: var(--sheet); border-radius: 26px 26px 0 0; padding: 10px 22px calc(var(--safe-b) + 28px); -webkit-overflow-scrolling: touch; user-select: text; -webkit-user-select: text; }
+.grab { width: 40px; height: 5px; border-radius: 3px; background: rgba(255,255,255,0.28); margin: 0 auto 16px; }
+.sheet h2 { margin: 0 0 12px; font-size: 22px; font-weight: 700; color: var(--sun); }
+.sheet h3 { margin: 18px 0 4px; font-size: 16px; font-weight: 600; }
+.sheet p { margin: 0; color: var(--muted); font-size: 15px; line-height: 1.42; }
+.kv { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; font-size: 15px; margin-top: 6px; }
+.kv dt { color: var(--muted); }
+.kv dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
+.row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.btn { height: 42px; padding: 0 16px; border-radius: 21px; background: var(--btn); font-size: 15px; font-weight: 500; white-space: nowrap; }
+.btn:active { background: var(--btn-press); }
+.btn.primary { background: var(--sun); color: #1B1300; font-weight: 600; }
+.btn.small { height: 34px; padding: 0 12px; font-size: 14px; border-radius: 17px; }
+.btn[disabled] { opacity: 0.4; }
+.field { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--muted); flex: 1; min-width: 120px; }
+.field input { height: 40px; border-radius: 10px; border: 1px solid var(--line); background: #2C2C2E; color: var(--ink); padding: 0 10px; font-size: 16px; }
+.choice { width: 100%; text-align: left; padding: 14px 4px; border-bottom: 1px solid var(--line); font-size: 17px; display: flex; justify-content: space-between; }
+.choice .tick { color: var(--sun); }
+
+/* Eclipses */
+.ecl { display: grid; grid-template-columns: 64px 1fr; gap: 14px; align-items: center; width: 100%; text-align: left; padding: 14px 0; border-bottom: 1px solid var(--line); }
+.ecl:last-child { border-bottom: 0; }
+.ecl .t1 { font-size: 16px; font-weight: 600; }
+.ecl .t2 { font-size: 14px; color: var(--muted); margin-top: 2px; font-variant-numeric: tabular-nums; }
+.ecl .t3 { font-size: 13px; color: var(--sun); margin-top: 3px; }
+.empty { color: var(--muted); padding: 18px 0; font-size: 15px; }
+
+/* Tool panels (time travel, compare, calibrate) */
+.panel { position: fixed; left: 0; right: 0; bottom: 0; z-index: 15; display: flex; justify-content: center; pointer-events: none; }
+.panel > div { pointer-events: auto; width: min(100%, 560px); background: var(--glass-strong); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-radius: 22px 22px 0 0; padding: 12px 18px calc(var(--safe-b) + 12px); display: flex; flex-direction: column; gap: 9px; }
+.panel .scroll { flex-wrap: nowrap; overflow-x: auto; margin: 0 -18px; padding: 0 18px; scrollbar-width: none; }
+.panel .scroll::-webkit-scrollbar { display: none; }
+.panel .inline { display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--muted); white-space: nowrap; }
+.panel .head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.panel .title { font-size: 17px; font-weight: 600; }
+.panel .big { font-size: 30px; font-weight: 600; font-variant-numeric: tabular-nums; letter-spacing: -0.5px; }
+.panel .sub { font-size: 14px; color: var(--muted); }
+.panel p { margin: 0; font-size: 14px; color: var(--muted); line-height: 1.4; }
+input[type=range] { width: 100%; height: 28px; margin: 0; accent-color: var(--sun); }
+input[type=date] { height: 34px; border-radius: 17px; border: 0; background: var(--btn); color: var(--ink); padding: 0 12px; font-size: 14px; min-width: 0; }
+.legend { display: flex; gap: 14px; font-size: 13px; color: var(--muted); flex-wrap: wrap; }
+.legend i { display: inline-block; width: 18px; height: 4px; border-radius: 2px; vertical-align: middle; margin-right: 6px; }
+.cmp { display: grid; grid-template-columns: auto 1fr 1fr; gap: 4px 12px; font-size: 14px; font-variant-numeric: tabular-nums; }
+.cmp b { font-weight: 600; }
+.cmp .c1 { color: var(--sun); } .cmp .c2 { color: var(--compare); }
+.cmp span:first-child, .cmp .lbl { color: var(--muted); }
+
+/* Start screen */
+#start { position: fixed; inset: 0; z-index: 50; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 32px 28px calc(var(--safe-b) + 32px); background: radial-gradient(120% 70% at 50% 100%, #3A2A12 0%, #12161D 55%, #0B0D10 100%); }
+#start svg { width: 132px; height: 132px; margin-bottom: 18px; }
+#start h1 { margin: 0 0 10px; font-size: 34px; font-weight: 700; letter-spacing: -0.5px; }
+#start p { margin: 0 0 28px; color: var(--muted); font-size: 16px; line-height: 1.45; max-width: 340px; }
+#start .btn { height: 52px; padding: 0 44px; border-radius: 26px; font-size: 18px; }
+#start .note { margin: 18px 0 0; font-size: 13px; }
+#start .lang { position: absolute; top: calc(var(--safe-t) + 14px); right: 16px; }
+
+#toast { position: fixed; left: 50%; bottom: calc(var(--safe-b) + 104px); transform: translateX(-50%); z-index: 60; max-width: calc(100% - 40px); padding: 10px 16px; border-radius: 16px; background: var(--glass-strong); font-size: 14px; text-align: center; transition: opacity 0.25s; }
+#flash { position: fixed; inset: 0; background: #fff; opacity: 0; pointer-events: none; z-index: 70; transition: opacity 0.35s; }
+</style>
+</head>
+<body>
+<div id="sky"></div>
+<video id="cam" playsinline muted autoplay hidden></video>
+<canvas id="overlay"></canvas>
+
+<div id="hud">
+  <button class="pill" id="headingPill" aria-label="Heading"><span id="headingTxt">—</span><small id="headingDeg"></small></button>
+  <div class="chip" id="readout"></div>
+  <div class="chip warn" id="modeChip" hidden></div>
+</div>
+
+<div id="bottombar">
+  <button class="round" id="btnInfo" aria-label="About">
+    <svg viewBox="0 0 32 32" fill="none" stroke="#fff" stroke-width="2.2"><circle cx="16" cy="16" r="13"/><path d="M16 14v9M13 23h6M13 14h3" stroke-linecap="round"/><circle cx="16" cy="9.5" r="1.4" fill="#fff" stroke="none"/></svg>
+  </button>
+  <button class="round" id="btnShot" aria-label="Photo">
+    <svg viewBox="0 0 32 32" fill="none" stroke="#fff" stroke-width="2.2" stroke-linejoin="round"><path d="M4 11.5c0-1.4 1.1-2.5 2.5-2.5h3.6l2.2-3h7.4l2.2 3h3.6c1.4 0 2.5 1.1 2.5 2.5v13c0 1.4-1.1 2.5-2.5 2.5h-19C5.1 27 4 25.9 4 24.5z"/><circle cx="16" cy="17" r="5.2"/></svg>
+  </button>
+  <span class="spacer"></span>
+  <button class="round big" id="btnMenu" aria-label="Menu">
+    <svg viewBox="0 0 32 32" stroke="#fff" stroke-width="2.4" stroke-linecap="round"><path d="M7 10h18M7 16h18M7 22h18"/></svg>
+  </button>
+</div>
+
+<!-- Action menu -->
+<div class="scrim" id="menu" hidden>
+  <div class="menu" role="menu">
+    <button data-act="calibrate"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8"><circle cx="12" cy="12" r="7"/><path d="M12 2v5M12 17v5M2 12h5M17 12h5" stroke-linecap="round"/></svg><span data-i18n="calibrate"></span></button>
+    <button data-act="travel"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 12a8.5 8.5 0 1 0 2.5-6"/><path d="M3 4v4h4"/><path d="M12 7.5V12l3 2"/></svg><span data-i18n="travel"></span><i class="state" id="stTravel" hidden></i></button>
+    <button data-act="compare"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 7H5l4-4M5 17h14l-4 4"/></svg><span data-i18n="compare"></span><i class="state" id="stCompare" hidden></i></button>
+    <button data-act="solstice"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round"><path d="M7 14a5 5 0 0 1 10 0M12 5v2M5.2 8.2l1.4 1.4M18.8 8.2l-1.4 1.4M3 14h18M5 17.5h14M7 21h10"/></svg><span data-i18n="solstice"></span><i class="state" id="stSolstice" hidden></i></button>
+    <button data-act="eclipses"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="#fff"/></svg><span data-i18n="eclipses"></span></button>
+    <button data-act="language"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.8 3 2.8 15 0 18M12 3c-2.8 3-2.8 15 0 18M5 7.5h14M5 16.5h14"/></svg><span data-i18n="language"></span></button>
+    <button data-act="cancel"><span data-i18n="cancel"></span></button>
+  </div>
+</div>
+
+<!-- Sheets -->
+<div class="sheet-wrap" id="sheetWrap" hidden><div class="sheet" id="sheet" role="dialog"></div></div>
+
+<!-- Tool panel -->
+<div class="panel" id="panel" hidden><div id="panelBody"></div></div>
+
+<!-- Start screen -->
+<div id="start">
+  <button class="btn small lang" id="startLang"></button>
+  <svg viewBox="0 0 120 120" aria-hidden="true">
+    <defs><radialGradient id="g" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#FFC20E" stop-opacity=".55"/><stop offset="1" stop-color="#FFC20E" stop-opacity="0"/></radialGradient></defs>
+    <path d="M10 92 C 30 30, 90 30, 110 92" fill="none" stroke="#FFC20E" stroke-width="5" stroke-linecap="round"/>
+    <path d="M4 92h112" stroke="#fff" stroke-width="3" stroke-dasharray="9 7" opacity=".85"/>
+    <circle cx="74" cy="47" r="22" fill="url(#g)"/><circle cx="74" cy="47" r="11" fill="#FFC20E"/>
+  </svg>
+  <h1 data-i18n="appName"></h1>
+  <p data-i18n="tagline"></p>
+  <button class="btn primary" id="startBtn" data-i18n="start"></button>
+  <p class="note" data-i18n="startNote"></p>
+</div>
+
+<div id="toast" hidden></div>
+<div id="flash"></div>
+
+<script src="astro.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
