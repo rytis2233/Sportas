@@ -46,6 +46,7 @@ final class MotionService {
     var magneticDecl = 0.0                   // only used in the magnetic fallback
     private var convention = 0               // 0 unknown, 1 = matrix is reference→device, 2 = device→reference
     private var started = false
+    private var lastSample: TimeInterval = 0
 
     var available: Bool { mm.isDeviceMotionAvailable }
 
@@ -60,10 +61,21 @@ final class MotionService {
 
     /// True north needs a location fix; if no samples arrive, fall back to magnetic north.
     func fallbackIfSilent() {
-        guard started, R == nil, mode == "true" else { return }
+        guard started, mode == "true", ProcessInfo.processInfo.systemUptime - lastSample > 2.5 else { return }
         mm.stopDeviceMotionUpdates()
         if CMMotionManager.availableAttitudeReferenceFrames().contains(.xMagneticNorthZVertical) { run(.xMagneticNorthZVertical, "magnetic") }
         else { run(.xArbitraryCorrectedZVertical, "relative") }
+    }
+
+    /// Location permission arrived after we had to fall back: switch to true north.
+    /// Returns true if it switched (the caller re-checks later with fallbackIfSilent).
+    @discardableResult
+    func upgradeToTrueNorth() -> Bool {
+        guard started, mode != "true", CMMotionManager.availableAttitudeReferenceFrames().contains(.xTrueNorthZVertical) else { return false }
+        mm.stopDeviceMotionUpdates()
+        lastSample = ProcessInfo.processInfo.systemUptime
+        run(.xTrueNorthZVertical, "true")
+        return true
     }
 
     private func run(_ frame: CMAttitudeReferenceFrame, _ name: String) {
@@ -93,6 +105,7 @@ final class MotionService {
         var W = M3.mul(P, A)
         if mode == "magnetic" { W = M3.mul(M3.Rz(-magneticDecl), W) }
         R = W
+        lastSample = ProcessInfo.processInfo.systemUptime
         fieldAccuracy = Int(m.magneticField.accuracy.rawValue)
     }
 }

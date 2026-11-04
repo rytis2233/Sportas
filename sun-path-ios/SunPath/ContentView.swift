@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 @main
 struct SunPathApp: App {
@@ -10,6 +11,37 @@ struct SunPathApp: App {
     }
 }
 
+// MARK: - Style helpers
+
+enum Haptics {
+    static func tap() { UIImpactFeedbackGenerator(style: .light).impactOccurred() }
+    static func select() { UISelectionFeedbackGenerator().selectionChanged() }
+}
+
+extension View {
+    /// Frosted glass with a hairline edge.
+    func glass<S: Shape>(_ shape: S, strong: Bool = false) -> some View {
+        self
+            .background(strong ? AnyShapeStyle(.regularMaterial) : AnyShapeStyle(.ultraThinMaterial), in: shape)
+            .overlay(shape.stroke(Color.white.opacity(0.14), lineWidth: 0.8))
+    }
+}
+
+/// Buttons shrink slightly while pressed.
+struct PressStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.94 : 1)
+            .opacity(configuration.isPressed ? 0.85 : 1)
+            .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
+    }
+}
+
+let Secondary = Color.white.opacity(0.62)
+let SoftCard = Color.white.opacity(0.06)
+
+// MARK: - Main screen
+
 struct ContentView: View {
     @ObservedObject var m: AppModel
 
@@ -19,43 +51,58 @@ struct ContentView: View {
                 if m.cameraOn {
                     CameraPreview(session: m.camera.session)
                 } else {
-                    LinearGradient(colors: [Color(red: 0.05, green: 0.11, blue: 0.2), Color(red: 0.17, green: 0.29, blue: 0.45),
-                                            Color(red: 0.49, green: 0.62, blue: 0.75)], startPoint: .top, endPoint: .bottom)
+                    LinearGradient(colors: [Color(red: 0.04, green: 0.08, blue: 0.16), Color(red: 0.14, green: 0.25, blue: 0.42),
+                                            Color(red: 0.45, green: 0.60, blue: 0.76)], startPoint: .top, endPoint: .bottom)
                 }
             }
             .ignoresSafeArea()
 
             OverlayLayer(m: m).ignoresSafeArea()
 
+            // soft vignette so the controls read on bright skies
             VStack {
-                HUD(m: m).padding(.top, 6)
+                LinearGradient(colors: [Color.black.opacity(0.35), .clear], startPoint: .top, endPoint: .bottom).frame(height: 170)
+                Spacer()
+                LinearGradient(colors: [.clear, Color.black.opacity(0.35)], startPoint: .top, endPoint: .bottom).frame(height: 190)
+            }
+            .ignoresSafeArea()
+            .allowsHitTesting(false)
+
+            VStack {
+                HUD(m: m).padding(.top, 4)
                 Spacer()
             }
 
             VStack {
                 Spacer()
-                if m.panel == nil { BottomBar(m: m) } else { PanelHost(m: m) }
+                if m.panel == nil {
+                    BottomBar(m: m).transition(.move(edge: .bottom).combined(with: .opacity))
+                } else {
+                    PanelHost(m: m).transition(.move(edge: .bottom))
+                }
             }
 
-            if m.menuOpen { MenuOverlay(m: m) }
+            if m.menuOpen { MenuOverlay(m: m).transition(.opacity) }
 
             if let t = m.toast {
                 VStack {
-                    Spacer()
                     Text(t)
-                        .font(.system(size: 15, weight: .medium))
+                        .font(rounded(15, .semibold))
                         .multilineTextAlignment(.center)
-                        .padding(.horizontal, 16).padding(.vertical, 10)
-                        .background(RoundedRectangle(cornerRadius: 16).fill(Color(white: 0.11).opacity(0.94)))
+                        .padding(.horizontal, 18).padding(.vertical, 11)
+                        .glass(Capsule(), strong: true)
                         .padding(.horizontal, 24)
-                        .padding(.bottom, m.panel == nil ? 100 : 330)
+                        .padding(.top, 150)
+                    Spacer()
                 }
                 .allowsHitTesting(false)
-                .transition(.opacity)
+                .transition(.move(edge: .top).combined(with: .opacity))
             }
         }
         .foregroundColor(.white)
-        .animation(.easeInOut(duration: 0.2), value: m.toast)
+        .animation(.spring(response: 0.38, dampingFraction: 0.86), value: m.toast)
+        .animation(.spring(response: 0.38, dampingFraction: 0.86), value: m.menuOpen)
+        .animation(.spring(response: 0.38, dampingFraction: 0.86), value: m.panel)
         .sheet(item: $m.sheet) { kind in
             Group {
                 switch kind {
@@ -80,7 +127,7 @@ struct OverlayLayer: View {
 
     var body: some View {
         GeometryReader { geo in
-            TimelineView(.animation) { _ in
+            TimelineView(.animation(minimumInterval: 1.0 / 60.0, paused: false)) { _ in
                 Canvas { ctx, size in
                     OverlayDrawer(m: m, p: m.projector(size), when: m.now()).draw(ctx)
                 }
@@ -108,6 +155,7 @@ struct OverlayLayer: View {
                         let moved = hypot(Double(v.location.x - v.startLocation.x), Double(v.location.y - v.startLocation.y))
                         if m.panel == .calibrate && moved < 10 && m.motion.R != nil, let tb = m.trackedBodyUp() {
                             m.alignPoint(v.location, tb)
+                            Haptics.tap()
                             m.showToast(L.t(m.target == .sun ? "aligned" : "alignedMoon"))
                         }
                     }
@@ -125,27 +173,36 @@ struct HUD: View {
     var body: some View {
         TimelineView(.periodic(from: .now, by: 0.15)) { _ in
             let info = m.hudInfo()
+            let moon = m.target == .moon
             VStack(spacing: 8) {
                 Button { if m.travel != nil { m.openTravel() } } label: {
-                    VStack(spacing: 1) {
-                        Text(info.dir).font(.system(size: 26, weight: .semibold))
-                        Text(info.deg).font(.system(size: 12, weight: .medium)).monospacedDigit().foregroundColor(.white.opacity(0.62))
+                    VStack(spacing: 0) {
+                        Text(info.dir).font(rounded(25, .bold))
+                        Text(info.deg).font(rounded(12, .semibold)).monospacedDigit().foregroundColor(Secondary)
                     }
-                    .frame(minWidth: 112)
-                    .padding(.horizontal, 22).padding(.vertical, 9)
-                    .background(Capsule().fill(Color.black.opacity(0.55)))
+                    .frame(minWidth: 104)
+                    .padding(.horizontal, 20).padding(.vertical, 8)
+                    .glass(Capsule())
                 }
-                .buttonStyle(.plain)
-                Text(info.readout)
-                    .font(.system(size: 13, weight: .medium)).monospacedDigit()
-                    .padding(.horizontal, 12).padding(.vertical, 6)
-                    .background(Capsule().fill(Color.black.opacity(0.55)))
+                .buttonStyle(PressStyle())
+
+                HStack(spacing: 7) {
+                    Image(systemName: moon ? "moon.fill" : "sun.max.fill")
+                        .foregroundColor(moon ? MoonColor : SunColor)
+                    Text(info.readout).monospacedDigit()
+                }
+                .font(rounded(13, .semibold))
+                .padding(.horizontal, 13).padding(.vertical, 7)
+                .glass(Capsule())
+
                 if let chip = info.chip {
-                    Text(chip)
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundColor(info.alert ? .white : .black)
-                        .padding(.horizontal, 12).padding(.vertical, 6)
-                        .background(Capsule().fill(info.alert ? Color(red: 0.78, green: 0.24, blue: 0.18) : SunColor))
+                    HStack(spacing: 7) {
+                        Circle().fill(info.alert ? NorthColor : SunColor).frame(width: 7, height: 7)
+                        Text(chip)
+                    }
+                    .font(rounded(13, .semibold))
+                    .padding(.horizontal, 13).padding(.vertical, 7)
+                    .glass(Capsule())
                 }
             }
         }
@@ -154,18 +211,22 @@ struct HUD: View {
 
 // MARK: - Buttons
 
-struct RoundButton: View {
+struct GlassButton: View {
     let icon: String
-    var big = false
+    var size: CGFloat = 50
     let action: () -> Void
     var body: some View {
-        Button(action: action) {
+        Button {
+            Haptics.tap()
+            action()
+        } label: {
             Image(systemName: icon)
-                .font(.system(size: big ? 26 : 23, weight: .regular))
-                .frame(width: big ? 66 : 54, height: big ? 66 : 54)
-                .background(Circle().fill(Color.black.opacity(0.6)))
+                .font(.system(size: size * 0.4, weight: .medium))
+                .frame(width: size, height: size)
+                .glass(Circle())
+                .contentShape(Circle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(PressStyle())
     }
 }
 
@@ -177,100 +238,138 @@ struct Pill: View {
     var body: some View {
         Button(action: action) {
             Text(title)
-                .font(.system(size: small ? 14 : 15, weight: primary ? .semibold : .medium))
+                .font(rounded(small ? 14 : 15, primary ? .bold : .semibold))
                 .lineLimit(1)
-                .padding(.horizontal, small ? 12 : 16)
-                .frame(height: small ? 34 : 42)
+                .padding(.horizontal, small ? 13 : 18)
+                .frame(height: small ? 34 : 44)
                 .foregroundColor(primary ? .black : .white)
-                .background(Capsule().fill(primary ? SunColor : Color.gray.opacity(0.3)))
+                .background(
+                    Capsule().fill(primary
+                        ? AnyShapeStyle(LinearGradient(colors: [SunLight, SunColor], startPoint: .top, endPoint: .bottom))
+                        : AnyShapeStyle(Color.white.opacity(0.13)))
+                )
+                .contentShape(Capsule())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(PressStyle())
     }
 }
 
 struct BottomBar: View {
     @ObservedObject var m: AppModel
     var body: some View {
-        HStack(spacing: 18) {
-            RoundButton(icon: "info.circle") { m.sheet = .about }
-            RoundButton(icon: "camera") { m.takePhoto() }
-            Spacer(minLength: 4)
+        ZStack {
+            HStack(spacing: 12) {
+                GlassButton(icon: "info") { m.sheet = .about }
+                GlassButton(icon: "camera") { m.takePhoto() }
+                Spacer()
+                GlassButton(icon: "line.3.horizontal", size: 58) { m.menuOpen = true }
+            }
             BodySwitch(m: m)
-            Spacer(minLength: 4)
-            RoundButton(icon: "line.3.horizontal", big: true) { m.menuOpen = true }
         }
-        .padding(.horizontal, 24)
-        .padding(.bottom, 8)
+        .padding(.horizontal, 20)
+        .padding(.bottom, 6)
     }
 }
 
-/// Sun / Moon switch on the main screen.
+/// Sun / Moon switch on the main screen, with a sliding highlight.
 struct BodySwitch: View {
     @ObservedObject var m: AppModel
+    @Namespace private var ns
     var body: some View {
-        HStack(spacing: 2) {
+        HStack(spacing: 0) {
             segment("sun.max.fill", .sun, SunColor)
             segment("moon.fill", .moon, MoonColor)
         }
         .padding(4)
-        .background(Capsule().fill(Color.black.opacity(0.6)))
+        .glass(Capsule())
     }
     private func segment(_ icon: String, _ b: SkyBody, _ color: Color) -> some View {
         let on = m.target == b
-        return Button { m.setTarget(b) } label: {
-            Image(systemName: icon)
-                .font(.system(size: 19, weight: .semibold))
-                .foregroundColor(on ? .black : .white.opacity(0.85))
-                .frame(width: 46, height: 46)
-                .background(Circle().fill(on ? color : Color.clear))
+        return Button {
+            Haptics.select()
+            withAnimation(.spring(response: 0.32, dampingFraction: 0.78)) { m.setTarget(b) }
+        } label: {
+            ZStack {
+                if on {
+                    Capsule()
+                        .fill(LinearGradient(colors: [Color.white.opacity(0.95), color], startPoint: .top, endPoint: .bottom))
+                        .matchedGeometryEffect(id: "selection", in: ns)
+                }
+                Image(systemName: icon)
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundColor(on ? .black : .white.opacity(0.8))
+            }
+            .frame(width: 50, height: 42)
+            .contentShape(Capsule())
         }
         .buttonStyle(.plain)
         .accessibilityLabel(L.t(b == .sun ? "sun" : "moon"))
     }
 }
 
-// MARK: - Menu
+// MARK: - Menu (action sheet)
 
 struct MenuOverlay: View {
     @ObservedObject var m: AppModel
     var body: some View {
-        ZStack {
-            Color.black.opacity(0.42).ignoresSafeArea().onTapGesture { m.menuOpen = false }
+        ZStack(alignment: .bottom) {
+            Color.black.opacity(0.4).ignoresSafeArea().onTapGesture { m.menuOpen = false }
             VStack(spacing: 10) {
-                item("scope", "calibrate", false) { m.panel = .calibrate }
-                item("clock.arrow.circlepath", "travel", m.travel != nil) { m.openTravel() }
-                item("arrow.left.arrow.right", "compare", m.compare != nil) { m.openCompare() }
-                item("sun.horizon", "solstice", m.solstice) { m.toggleSolstice() }
-                item("circle.fill", "eclipses", false) { m.sheet = .eclipses }
-                item("globe", "language", false) { m.sheet = .language }
-                item(nil, "cancel", false) {}
+                VStack(spacing: 0) {
+                    item("scope", "calibrate", SunColor, false) { m.panel = .calibrate }
+                    divider
+                    item("clock.arrow.circlepath", "travel", Color(red: 0.45, green: 0.66, blue: 1.0), m.travel != nil) { m.openTravel() }
+                    divider
+                    item("arrow.left.arrow.right", "compare", CompareColor, m.compare != nil) { m.openCompare() }
+                    divider
+                    item("sun.horizon.fill", "solstice", JuneColor, m.solstice) { m.toggleSolstice() }
+                    divider
+                    item("circle.lefthalf.filled", "eclipses", Color(red: 0.75, green: 0.6, blue: 1.0), false) { m.sheet = .eclipses }
+                    divider
+                    item("globe", "language", Color(red: 0.45, green: 0.85, blue: 0.6), false) { m.sheet = .language }
+                }
+                .glass(RoundedRectangle(cornerRadius: 26, style: .continuous), strong: true)
+
+                Button { m.menuOpen = false } label: {
+                    Text(L.t("cancel")).font(rounded(17, .bold))
+                        .frame(maxWidth: .infinity).frame(height: 54)
+                        .glass(RoundedRectangle(cornerRadius: 26, style: .continuous), strong: true)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(PressStyle())
             }
-            .padding(16)
-            .background(RoundedRectangle(cornerRadius: 30).fill(Color(white: 0.16).opacity(0.92)))
-            .overlay(RoundedRectangle(cornerRadius: 30).stroke(Color.white.opacity(0.1), lineWidth: 1))
-            .frame(maxWidth: 360)
-            .padding(.horizontal, 24)
+            .frame(maxWidth: 420)
+            .padding(.horizontal, 14)
+            .padding(.bottom, 8)
+            .transition(.move(edge: .bottom))
         }
     }
 
-    private func item(_ icon: String?, _ key: String, _ active: Bool, _ action: @escaping () -> Void) -> some View {
+    private var divider: some View { Rectangle().fill(Color.white.opacity(0.1)).frame(height: 0.7).padding(.leading, 62) }
+
+    private func item(_ icon: String, _ key: String, _ tint: Color, _ active: Bool, _ action: @escaping () -> Void) -> some View {
         Button {
+            Haptics.tap()
             m.menuOpen = false
-            if m.panel != nil { m.playing = false; m.panel = nil }
             action()
         } label: {
-            ZStack {
-                Text(L.t(key)).font(.system(size: 17, weight: .medium)).frame(maxWidth: .infinity)
-                HStack {
-                    if let icon = icon { Image(systemName: icon).font(.system(size: 19)) }
-                    Spacer()
-                    if active { Circle().fill(SunColor).frame(width: 8, height: 8) }
+            HStack(spacing: 14) {
+                Image(systemName: icon)
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(tint)
+                    .frame(width: 34, height: 34)
+                    .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(tint.opacity(0.18)))
+                Text(L.t(key)).font(rounded(17, .semibold))
+                Spacer()
+                if active {
+                    Text("●").font(.system(size: 10)).foregroundColor(tint)
+                } else {
+                    Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundColor(.white.opacity(0.3))
                 }
-                .padding(.horizontal, 18)
             }
-            .frame(height: 50)
-            .background(Capsule().fill(Color.gray.opacity(0.3)))
-            .contentShape(Capsule())
+            .padding(.horizontal, 14)
+            .frame(height: 56)
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
     }
@@ -282,6 +381,7 @@ struct PanelHost: View {
     @ObservedObject var m: AppModel
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
+            Capsule().fill(Color.white.opacity(0.25)).frame(width: 36, height: 5).frame(maxWidth: .infinity)
             if let p = m.panel {
                 switch p {
                 case .travel: TravelPanel(m: m)
@@ -290,13 +390,29 @@ struct PanelHost: View {
                 }
             }
         }
-        .padding(.horizontal, 18)
-        .padding(.top, 14)
+        .padding(.horizontal, 20)
+        .padding(.top, 8)
         .padding(.bottom, 10)
         .frame(maxWidth: 560)
         .background(
-            RoundedRectangle(cornerRadius: 22).fill(Color(white: 0.11).opacity(0.94)).ignoresSafeArea(edges: .bottom)
+            RoundedRectangle(cornerRadius: 30, style: .continuous)
+                .fill(.regularMaterial)
+                .overlay(RoundedRectangle(cornerRadius: 30, style: .continuous).stroke(Color.white.opacity(0.12), lineWidth: 0.8))
+                .ignoresSafeArea(edges: .bottom)
         )
+    }
+}
+
+struct PanelTitle: View {
+    let icon: String
+    let text: String
+    let tint: Color
+    var body: some View {
+        HStack(spacing: 8) {
+            Image(systemName: icon).foregroundColor(tint)
+            Text(text)
+        }
+        .font(rounded(17, .bold))
     }
 }
 
@@ -306,24 +422,33 @@ struct TravelPanel: View {
         let t = m.travel ?? Date()
         let calr = Calendar.current
         let minutes = calr.component(.hour, from: t) * 60 + calr.component(.minute, from: t)
-        VStack(alignment: .leading, spacing: 10) {
+        let tint = m.target == .moon ? MoonColor : SunColor
+        VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .firstTextBaseline) {
-                Text(L.time(t)).font(.system(size: 30, weight: .semibold)).monospacedDigit()
+                Text(L.time(t)).font(rounded(38, .bold)).monospacedDigit()
                 Spacer()
-                Text(L.date(t)).font(.system(size: 14)).foregroundColor(.white.opacity(0.62))
+                Text(L.date(t)).font(rounded(15, .medium)).foregroundColor(Secondary)
             }
             Slider(value: Binding(get: { Double(minutes) }, set: { m.setTravelMinutes(Int($0)) }), in: 0...1439, step: 1)
-                .tint(SunColor)
+                .tint(tint)
             HStack(spacing: 8) {
                 Pill(title: "‹ 1d", small: true) { m.shiftTravelDay(-1) }
                 DatePicker("", selection: Binding(get: { t }, set: { m.setTravelDate($0) }), displayedComponents: .date)
                     .labelsHidden()
                 Pill(title: "1d ›", small: true) { m.shiftTravelDay(1) }
-                Pill(title: m.playing ? "❚❚" : "▶", small: true) { m.playing.toggle() }
+                Spacer(minLength: 0)
+                Button { m.playing.toggle() } label: {
+                    Image(systemName: m.playing ? "pause.fill" : "play.fill")
+                        .font(.system(size: 15, weight: .bold))
+                        .foregroundColor(.black)
+                        .frame(width: 38, height: 38)
+                        .background(Circle().fill(tint))
+                }
+                .buttonStyle(PressStyle())
             }
             if let e = m.eclipse, calr.isDate(e.max, inSameDayAs: t) {
                 Text(L.t("eclipse") + " · \(Int((e.obscuration * 100).rounded()))% " + L.t("obsc"))
-                    .font(.system(size: 14)).foregroundColor(.white.opacity(0.62))
+                    .font(rounded(14, .semibold)).foregroundColor(Secondary)
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 8) {
                         Pill(title: L.t("begins") + " " + L.time(e.c1), small: true) { m.travel = e.c1; m.playing = false }
@@ -347,9 +472,9 @@ struct ComparePanel: View {
         let other = m.compare ?? Date()
         let moon = m.target == .moon
         let a = m.dayPath(m.now(), m.target).ev, b = m.dayPath(other, m.target).ev
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text(L.t("cmpTitle")).font(.system(size: 17, weight: .semibold))
+                PanelTitle(icon: "arrow.left.arrow.right", text: L.t("cmpTitle"), tint: CompareColor)
                 Spacer()
                 DatePicker("", selection: Binding(get: { other }, set: { m.compare = $0 }), displayedComponents: .date)
                     .labelsHidden()
@@ -363,11 +488,11 @@ struct ComparePanel: View {
                     Pill(title: L.t("plus6m"), small: true) { m.comparePreset("m6") }
                 }
             }
-            Grid(alignment: .leading, horizontalSpacing: 14, verticalSpacing: 4) {
+            Grid(alignment: .leading, horizontalSpacing: 14, verticalSpacing: 6) {
                 GridRow {
                     Text("")
-                    Text(L.shortDate(m.now())).fontWeight(.semibold).foregroundColor(SunColor)
-                    Text(L.shortDate(other)).fontWeight(.semibold).foregroundColor(CompareColor)
+                    Text(L.shortDate(m.now())).font(rounded(14, .bold)).foregroundColor(moon ? MoonColor : SunColor)
+                    Text(L.shortDate(other)).font(rounded(14, .bold)).foregroundColor(CompareColor)
                 }
                 if moon {
                     row(L.t("moonrise"), L.time(a.rise), L.time(b.rise))
@@ -381,8 +506,10 @@ struct ComparePanel: View {
                     row(L.t("daylength"), length(a), length(b))
                 }
             }
-            .font(.system(size: 14))
+            .font(rounded(14, .medium))
             .monospacedDigit()
+            .padding(12)
+            .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(SoftCard))
             HStack {
                 Pill(title: L.t("hideCmp")) { m.compare = nil; m.panel = nil }
                 Spacer()
@@ -392,7 +519,7 @@ struct ComparePanel: View {
     }
     private func row(_ k: String, _ x: String, _ y: String) -> some View {
         GridRow {
-            Text(k).foregroundColor(.white.opacity(0.62))
+            Text(k).foregroundColor(Secondary)
             Text(x)
             Text(y)
         }
@@ -404,33 +531,39 @@ struct ComparePanel: View {
 struct CalibratePanel: View {
     @ObservedObject var m: AppModel
     var body: some View {
-        let sunUp = m.trackedBodyUp() != nil
+        let up = m.trackedBodyUp() != nil
         let moon = m.target == .moon
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text(L.t("calibrate")).font(.system(size: 17, weight: .semibold))
+                PanelTitle(icon: "scope", text: L.t("calibrate"), tint: moon ? MoonColor : SunColor)
                 Spacer()
-                Text(m.compassName).font(.system(size: 13)).foregroundColor(.white.opacity(0.62))
+                Text(m.compassName).font(rounded(12, .medium)).foregroundColor(Secondary)
             }
-            Text(moon ? L.t(sunUp ? "calHelpMoon" : "calHelpMoonDown") : L.t(sunUp ? "calHelp" : "calHelpNight"))
-                .font(.system(size: 14)).foregroundColor(.white.opacity(0.62))
+            Text(moon ? L.t(up ? "calHelpMoon" : "calHelpMoonDown") : L.t(up ? "calHelp" : "calHelpNight"))
+                .font(rounded(14, .medium)).foregroundColor(Secondary)
                 .fixedSize(horizontal: false, vertical: true)
-            HStack(spacing: 10) {
-                Text(L.t("fov")).font(.system(size: 14)).foregroundColor(.white.opacity(0.62))
-                Text(L.deg(m.effectiveFov, 1)).font(.system(size: 14)).monospacedDigit()
-                Slider(value: $m.cal.fovAdj, in: -15...15, step: 0.5).tint(SunColor)
+            VStack(spacing: 4) {
+                HStack {
+                    Text(L.t("fov")).foregroundColor(Secondary)
+                    Spacer()
+                    Text(L.deg(m.effectiveFov, 1)).monospacedDigit()
+                }
+                .font(rounded(14, .semibold))
+                Slider(value: $m.cal.fovAdj, in: -15...15, step: 0.5).tint(moon ? MoonColor : SunColor)
             }
-            Toggle(L.t("autoAlign"), isOn: $m.cal.auto).font(.system(size: 14)).tint(SunColor)
+            .padding(12)
+            .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(SoftCard))
+            Toggle(L.t("autoAlign"), isOn: $m.cal.auto).font(rounded(14, .semibold)).tint(SunColor)
             HStack(spacing: 10) {
-                Pill(title: L.t(moon ? "alignMoon" : "alignSun"), primary: true) { m.alignCenter() }
-                    .disabled(!sunUp)
-                    .opacity(sunUp ? 1 : 0.4)
+                Pill(title: L.t(moon ? "alignMoon" : "alignSun"), primary: true) { Haptics.tap(); m.alignCenter() }
+                    .disabled(!up)
+                    .opacity(up ? 1 : 0.4)
                 Pill(title: L.t("reset")) { m.resetCalibration() }
                 Spacer()
                 Pill(title: L.t("done")) { m.panel = nil }
             }
             Text(L.t("offset") + " " + L.signed(m.cal.yaw) + " / " + L.signed(m.cal.pitch))
-                .font(.system(size: 13)).foregroundColor(.white.opacity(0.62)).monospacedDigit()
+                .font(rounded(12, .medium)).foregroundColor(Secondary).monospacedDigit()
         }
     }
 }
@@ -438,9 +571,26 @@ struct CalibratePanel: View {
 // MARK: - Sheets
 
 struct SheetTitle: View {
+    let icon: String
     let text: String
     var body: some View {
-        Text(text).font(.system(size: 22, weight: .bold)).foregroundColor(SunColor).padding(.bottom, 4)
+        HStack(spacing: 10) {
+            Image(systemName: icon).foregroundColor(SunColor)
+            Text(text)
+        }
+        .font(rounded(24, .bold))
+        .padding(.bottom, 4)
+    }
+}
+
+struct Card<Content: View>: View {
+    let content: Content
+    init(@ViewBuilder _ content: () -> Content) { self.content = content() }
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) { content }
+            .padding(14)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(SoftCard))
     }
 }
 
@@ -455,77 +605,97 @@ struct AboutSheet: View {
         let mev = m.dayPath(Date(), .moon).ev
         let phase = Astro.moonPhase(Date())
         ScrollView {
-            VStack(alignment: .leading, spacing: 6) {
-                SheetTitle(text: L.t("about"))
-                section("howTitle", "how")
-                section("offlineTitle", "offline")
-                section("sensorsTitle", "sensors")
-                section("accTitle", "acc")
-                Text(L.t("status")).font(.system(size: 16, weight: .semibold)).padding(.top, 12)
-                Grid(alignment: .leading, horizontalSpacing: 14, verticalSpacing: 6) {
-                    kv(L.t("location"), String(format: "%.4f, %.4f", m.loc.lat, m.loc.lon) + "\n" + locSource)
-                    kv(L.t("orientation"), m.orientationName)
-                    kv(L.t("compassCal"), m.compassName)
-                    kv(L.t("cameraFov"), m.camera.fov > 10 ? L.deg(m.effectiveFov, 1) : "—")
-                    kv(L.t("calibration"), L.signed(m.cal.yaw) + " / " + L.signed(m.cal.pitch))
-                    kv(L.t("sunrise"), L.time(ev.rise))
-                    kv(L.t("noon"), L.time(ev.noon) + " · " + L.deg(ev.noonAlt, 1))
-                    kv(L.t("sunset"), L.time(ev.set))
-                    kv(L.t("daylength"), ev.state == "normal" ? L.dur(ev.dayLength) : L.t(ev.state))
-                }
-                .font(.system(size: 15))
-                Text(L.t("moonToday")).font(.system(size: 16, weight: .semibold)).padding(.top, 12)
-                Grid(alignment: .leading, horizontalSpacing: 14, verticalSpacing: 6) {
-                    kv(L.t("phase"), L.t("phase\(phase.index)") + " · \(Int((phase.illum * 100).rounded()))%")
-                    kv(L.t("moonrise"), mev.state == "normal" ? L.time(mev.rise) : moonState(mev.state))
-                    kv(L.t("moonset"), mev.state == "normal" ? L.time(mev.set) : moonState(mev.state))
-                    kv(L.t("maxAlt"), L.time(mev.noon) + " · " + L.deg(mev.noonAlt, 1))
-                }
-                .font(.system(size: 15))
-                HStack(spacing: 10) {
-                    Pill(title: L.t("edit"), small: true) {
-                        latText = String(format: "%.5f", m.loc.lat)
-                        lonText = String(format: "%.5f", m.loc.lon)
-                        editing = true
+            VStack(alignment: .leading, spacing: 12) {
+                SheetTitle(icon: "sun.max.fill", text: L.t("about"))
+
+                Card {
+                    heading("sun.max.fill", L.t("today"), SunColor)
+                    Grid(alignment: .leading, horizontalSpacing: 14, verticalSpacing: 6) {
+                        kv(L.t("sunrise"), L.time(ev.rise))
+                        kv(L.t("noon"), L.time(ev.noon) + " · " + L.deg(ev.noonAlt, 1))
+                        kv(L.t("sunset"), L.time(ev.set))
+                        kv(L.t("daylength"), ev.state == "normal" ? L.dur(ev.dayLength) : L.t(ev.state))
                     }
-                    Pill(title: L.t("useGps"), small: true) { m.useGPS(); m.sheet = nil }
+                    .font(rounded(15, .medium))
                 }
-                .padding(.top, 10)
-                if editing {
-                    HStack {
-                        TextField(L.t("lat"), text: $latText).keyboardType(.numbersAndPunctuation).textFieldStyle(.roundedBorder)
-                        TextField(L.t("lon"), text: $lonText).keyboardType(.numbersAndPunctuation).textFieldStyle(.roundedBorder)
+                Card {
+                    heading("moon.fill", L.t("moonToday"), MoonColor)
+                    Grid(alignment: .leading, horizontalSpacing: 14, verticalSpacing: 6) {
+                        kv(L.t("phase"), L.t("phase\(phase.index)") + " · \(Int((phase.illum * 100).rounded()))%")
+                        kv(L.t("moonrise"), mev.state == "normal" ? L.time(mev.rise) : moonState(mev.state))
+                        kv(L.t("moonset"), mev.state == "normal" ? L.time(mev.set) : moonState(mev.state))
+                        kv(L.t("maxAlt"), L.time(mev.noon) + " · " + L.deg(mev.noonAlt, 1))
                     }
-                    Pill(title: L.t("save"), primary: true, small: true) {
-                        let la = Double(latText.replacingOccurrences(of: ",", with: ".")) ?? 999
-                        let lo = Double(lonText.replacingOccurrences(of: ",", with: ".")) ?? 999
-                        if abs(la) <= 90 && abs(lo) <= 180 {
-                            m.loc = Loc(lat: la, lon: lo, h: 0, src: "manual")
-                            editing = false
+                    .font(rounded(15, .medium))
+                }
+                Card {
+                    heading("gauge.with.dots.needle.33percent", L.t("status"), CompareColor)
+                    Grid(alignment: .leading, horizontalSpacing: 14, verticalSpacing: 6) {
+                        kv(L.t("location"), String(format: "%.4f, %.4f", m.loc.lat, m.loc.lon) + "\n" + locSource)
+                        kv(L.t("orientation"), m.orientationName)
+                        kv(L.t("compassCal"), m.compassName)
+                        kv(L.t("cameraFov"), m.camera.fov > 10 ? L.deg(m.effectiveFov, 1) : "—")
+                        kv(L.t("calibration"), L.signed(m.cal.yaw) + " / " + L.signed(m.cal.pitch))
+                    }
+                    .font(rounded(15, .medium))
+                    HStack(spacing: 10) {
+                        Pill(title: L.t("edit"), small: true) {
+                            latText = String(format: "%.5f", m.loc.lat)
+                            lonText = String(format: "%.5f", m.loc.lon)
+                            editing = true
+                        }
+                        Pill(title: L.t("useGps"), small: true) { m.useGPS(); m.sheet = nil }
+                    }
+                    .padding(.top, 6)
+                    if editing {
+                        HStack {
+                            TextField(L.t("lat"), text: $latText).keyboardType(.numbersAndPunctuation).textFieldStyle(.roundedBorder)
+                            TextField(L.t("lon"), text: $lonText).keyboardType(.numbersAndPunctuation).textFieldStyle(.roundedBorder)
+                        }
+                        Pill(title: L.t("save"), primary: true, small: true) {
+                            let la = Double(latText.replacingOccurrences(of: ",", with: ".")) ?? 999
+                            let lo = Double(lonText.replacingOccurrences(of: ",", with: ".")) ?? 999
+                            if abs(la) <= 90 && abs(lo) <= 180 {
+                                m.loc = Loc(lat: la, lon: lo, h: 0, src: "manual")
+                                editing = false
+                            }
                         }
                     }
                 }
+                Card {
+                    section("howTitle", "how")
+                    section("offlineTitle", "offline")
+                    section("sensorsTitle", "sensors")
+                    section("accTitle", "acc")
+                }
             }
-            .padding(.horizontal, 22)
+            .padding(.horizontal, 18)
             .padding(.vertical, 20)
-            .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 
+    private func heading(_ icon: String, _ text: String, _ tint: Color) -> some View {
+        HStack(spacing: 8) {
+            Image(systemName: icon).foregroundColor(tint)
+            Text(text)
+        }
+        .font(rounded(16, .bold))
+        .padding(.bottom, 2)
+    }
     private func moonState(_ s: String) -> String { s == "polarDay" ? L.t("moonNeverSets") : L.t("moonNeverRises") }
     private var locSource: String {
         m.loc.src == "gps" ? L.t("gps") : (m.loc.src == "manual" ? L.t("manualLoc") : L.t("approxLoc"))
     }
     private func section(_ title: String, _ body: String) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(L.t(title)).font(.system(size: 16, weight: .semibold))
-            Text(L.t(body)).font(.system(size: 15)).foregroundColor(.white.opacity(0.62)).fixedSize(horizontal: false, vertical: true)
+        VStack(alignment: .leading, spacing: 3) {
+            Text(L.t(title)).font(rounded(15, .bold))
+            Text(L.t(body)).font(.system(size: 14)).foregroundColor(Secondary).fixedSize(horizontal: false, vertical: true)
         }
-        .padding(.top, 10)
+        .padding(.bottom, 6)
     }
     private func kv(_ k: String, _ v: String) -> some View {
         GridRow {
-            Text(k).foregroundColor(.white.opacity(0.62))
+            Text(k).foregroundColor(Secondary)
             Text(v).multilineTextAlignment(.trailing).frame(maxWidth: .infinity, alignment: .trailing).monospacedDigit()
         }
     }
@@ -535,16 +705,21 @@ struct EclipseDiagram: View {
     let disks: Astro.Disks
     var body: some View {
         Canvas { ctx, size in
-            let R = 22.0, k = R / disks.rS
+            let R = 21.0, k = R / disks.rS
             let cx = Double(size.width) / 2, cy = Double(size.height) / 2
             let dx = Astro.wrap180(disks.moon.az - disks.sun.az) * cos(disks.sun.alt * Astro.D2R) * k
             let dy = -(disks.moon.alt - disks.sun.alt) * k
             let mr = R * disks.rM / disks.rS
-            ctx.fill(Path(ellipseIn: CGRect(x: cx - R, y: cy - R, width: 2 * R, height: 2 * R)), with: .color(SunColor))
+            ctx.fill(Path(ellipseIn: CGRect(x: cx - R * 1.4, y: cy - R * 1.4, width: R * 2.8, height: R * 2.8)),
+                     with: .radialGradient(Gradient(colors: [SunColor.opacity(0.35), SunColor.opacity(0)]),
+                                           center: CGPoint(x: cx, y: cy), startRadius: R * 0.8, endRadius: R * 1.4))
+            ctx.fill(Path(ellipseIn: CGRect(x: cx - R, y: cy - R, width: 2 * R, height: 2 * R)),
+                     with: .radialGradient(Gradient(colors: [SunLight, SunColor, SunDeep]),
+                                           center: CGPoint(x: cx - 6, y: cy - 6), startRadius: 0, endRadius: R * 1.35))
             var c = ctx
-            c.clip(to: Path(ellipseIn: CGRect(x: cx - 30, y: cy - 30, width: 60, height: 60)))
+            c.clip(to: Path(ellipseIn: CGRect(x: cx - 31, y: cy - 31, width: 62, height: 62)))
             let mrect = CGRect(x: cx + dx - mr, y: cy + dy - mr, width: 2 * mr, height: 2 * mr)
-            c.fill(Path(ellipseIn: mrect), with: .color(Color(white: 0.18)))
+            c.fill(Path(ellipseIn: mrect), with: .color(Color(red: 0.11, green: 0.12, blue: 0.15)))
             c.stroke(Path(ellipseIn: mrect), with: .color(.white.opacity(0.25)), lineWidth: 1)
         }
         .frame(width: 64, height: 64)
@@ -555,27 +730,26 @@ struct EclipseSheet: View {
     @ObservedObject var m: AppModel
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 6) {
-                SheetTitle(text: L.t("eclTitle"))
-                Text(L.t("eclIntro")).font(.system(size: 15)).foregroundColor(.white.opacity(0.62))
+            VStack(alignment: .leading, spacing: 12) {
+                SheetTitle(icon: "circle.lefthalf.filled", text: L.t("eclTitle"))
+                Text(L.t("eclIntro")).font(rounded(15, .medium)).foregroundColor(Secondary)
                 if let list = m.eclipses {
                     if list.isEmpty {
-                        Text(L.t("noEcl")).foregroundColor(.white.opacity(0.62)).padding(.vertical, 18)
+                        Text(L.t("noEcl")).foregroundColor(Secondary).padding(.vertical, 18)
                     }
                     ForEach(list) { e in
                         Button { m.showEclipse(e) } label: { row(e) }
-                            .buttonStyle(.plain)
-                        Divider().background(Color.white.opacity(0.2))
+                            .buttonStyle(PressStyle())
                     }
                 } else {
                     HStack(spacing: 10) {
                         ProgressView()
-                        Text(L.t("calcing")).foregroundColor(.white.opacity(0.62))
+                        Text(L.t("calcing")).foregroundColor(Secondary)
                     }
                     .padding(.vertical, 18)
                 }
             }
-            .padding(.horizontal, 22)
+            .padding(.horizontal, 18)
             .padding(.vertical, 20)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
@@ -590,17 +764,24 @@ struct EclipseSheet: View {
         return HStack(spacing: 14) {
             EclipseDiagram(disks: Astro.sunMoonDisks(e.max, m.obs))
             VStack(alignment: .leading, spacing: 3) {
-                Text(L.longDate(e.max)).font(.system(size: 16, weight: .semibold))
-                Text(L.t(e.global) + " · " + here + " · \(Int((e.obscuration * 100).rounded()))% " + L.t("obsc"))
-                    .font(.system(size: 14)).foregroundColor(.white.opacity(0.62))
-                Text(L.time(e.c1) + " → " + L.time(e.max) + " → " + L.time(e.c4) + " · " + L.t("sunAlt") + " " + L.deg(e.sunAltMax))
-                    .font(.system(size: 14)).foregroundColor(.white.opacity(0.62)).monospacedDigit()
+                Text(L.longDate(e.max)).font(rounded(17, .bold))
+                Text(L.t(e.global) + " · " + here)
+                    .font(rounded(13, .medium)).foregroundColor(Secondary)
+                Text(L.time(e.c1) + " → " + L.time(e.max) + " → " + L.time(e.c4))
+                    .font(rounded(14, .semibold)).monospacedDigit()
+                HStack(spacing: 6) {
+                    Text("\(Int((e.obscuration * 100).rounded()))% " + L.t("obsc"))
+                    Text("·")
+                    Text(L.t("sunAlt") + " " + L.deg(e.sunAltMax))
+                }
+                .font(rounded(13, .medium)).foregroundColor(Secondary)
                 Text(notes.isEmpty ? L.t("showSky") + " ›" : notes.joined(separator: " · "))
-                    .font(.system(size: 13)).foregroundColor(SunColor)
+                    .font(rounded(13, .bold)).foregroundColor(SunColor)
             }
             Spacer(minLength: 0)
         }
-        .padding(.vertical, 10)
+        .padding(12)
+        .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(SoftCard))
         .contentShape(Rectangle())
     }
 }
@@ -608,27 +789,32 @@ struct EclipseSheet: View {
 struct LanguageSheet: View {
     @ObservedObject var m: AppModel
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            SheetTitle(text: L.t("language")).padding(.bottom, 8)
-            choice("English", "en")
-            Divider().background(Color.white.opacity(0.2))
-            choice("Lietuvių", "lt")
+        VStack(alignment: .leading, spacing: 12) {
+            SheetTitle(icon: "globe", text: L.t("language"))
+            VStack(spacing: 0) {
+                choice("English", "en")
+                Rectangle().fill(Color.white.opacity(0.1)).frame(height: 0.7)
+                choice("Lietuvių", "lt")
+            }
+            .padding(.horizontal, 14)
+            .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(SoftCard))
             Spacer()
         }
-        .padding(.horizontal, 22)
+        .padding(.horizontal, 18)
         .padding(.vertical, 20)
     }
     private func choice(_ name: String, _ code: String) -> some View {
         Button {
+            Haptics.select()
             m.lang = code
             m.sheet = nil
         } label: {
             HStack {
-                Text(name).font(.system(size: 17))
+                Text(name).font(rounded(17, .semibold))
                 Spacer()
-                if m.lang == code { Image(systemName: "checkmark").foregroundColor(SunColor) }
+                if m.lang == code { Image(systemName: "checkmark").font(.system(size: 15, weight: .bold)).foregroundColor(SunColor) }
             }
-            .padding(.vertical, 14)
+            .frame(height: 50)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)

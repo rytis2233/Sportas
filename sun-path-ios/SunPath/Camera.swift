@@ -36,8 +36,14 @@ final class CameraService: NSObject, AVCaptureVideoDataOutputSampleBufferDelegat
         guard let dev = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back),
               let input = try? AVCaptureDeviceInput(device: dev) else { return false }
         session.beginConfiguration()
-        if session.canSetSessionPreset(.photo) { session.sessionPreset = .photo }
         if session.canAddInput(input) { session.addInput(input) }
+        // A 4:3 format around 1920×1440 keeps the whole field of view without 12 MP frames.
+        if let f = CameraService.pickFormat(dev), (try? dev.lockForConfiguration()) != nil {
+            dev.activeFormat = f
+            dev.unlockForConfiguration()
+        } else if session.canSetSessionPreset(.photo) {
+            session.sessionPreset = .photo
+        }
         let out = AVCaptureVideoDataOutput()
         out.videoSettings = [kCVPixelBufferPixelFormatTypeKey as String: Int(kCVPixelFormatType_32BGRA)]
         out.alwaysDiscardsLateVideoFrames = true
@@ -54,6 +60,22 @@ final class CameraService: NSObject, AVCaptureVideoDataOutputSampleBufferDelegat
             if a > 0 && b > 0 { self.bufferW = b; self.bufferH = a }
         }
         return true
+    }
+
+    private static func pickFormat(_ dev: AVCaptureDevice) -> AVCaptureDevice.Format? {
+        var best: AVCaptureDevice.Format? = nil
+        var bestFov: Float = 0, bestW: Int32 = 0
+        for f in dev.formats {
+            let d = CMVideoFormatDescriptionGetDimensions(f.formatDescription)
+            guard d.height > 0, d.width >= 1280, d.width <= 2100 else { continue }
+            guard abs(Double(d.width) / Double(d.height) - 4.0 / 3.0) < 0.02 else { continue }
+            guard f.videoSupportedFrameRateRanges.contains(where: { $0.maxFrameRate >= 29 }) else { continue }
+            let fov = f.videoFieldOfView
+            if fov > bestFov + 0.5 || (abs(fov - bestFov) <= 0.5 && d.width > bestW) {
+                best = f; bestFov = fov; bestW = d.width
+            }
+        }
+        return best
     }
 
     func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {

@@ -84,7 +84,7 @@ enum L {
         "alignMoon": "Align to moon",
         "calHelpMoon": "Tap the real moon on the screen, or aim the crosshair at it and tap Align to moon. Drag to nudge.",
         "calHelpMoonDown": "The moon is below the horizon. Drag the screen to nudge the overlay onto a known direction.",
-        "moonToday": "Moon today", "moonrise": "Moonrise", "moonset": "Moonset", "maxAlt": "Highest", "illum": "Lit", "phase": "Phase",
+        "moonToday": "Moon today", "today": "Sun today", "moonrise": "Moonrise", "moonset": "Moonset", "maxAlt": "Highest", "illum": "Lit", "phase": "Phase",
         "moonNeverSets": "Moon up all day", "moonNeverRises": "Moon down all day",
         "phase0": "New moon", "phase1": "Waxing crescent", "phase2": "First quarter", "phase3": "Waxing gibbous",
         "phase4": "Full moon", "phase5": "Waning gibbous", "phase6": "Last quarter", "phase7": "Waning crescent"
@@ -133,7 +133,7 @@ enum L {
         "alignMoon": "Sulygiuoti su Mėnuliu",
         "calHelpMoon": "Paliesk tikrąjį Mėnulį ekrane arba nukreipk į jį kryželį ir spausk „Sulygiuoti su Mėnuliu“. Tempk, kad pataisytum.",
         "calHelpMoonDown": "Mėnulis po horizontu. Tempk ekraną, kad sulygintum piešinį su žinoma kryptimi.",
-        "moonToday": "Mėnulis šiandien", "moonrise": "Mėnulio patekėjimas", "moonset": "Mėnulio nusileidimas", "maxAlt": "Aukščiausiai",
+        "moonToday": "Mėnulis šiandien", "today": "Saulė šiandien", "moonrise": "Mėnulio patekėjimas", "moonset": "Mėnulio nusileidimas", "maxAlt": "Aukščiausiai",
         "illum": "Apšviesta", "phase": "Fazė",
         "moonNeverSets": "Mėnulis virš horizonto visą parą", "moonNeverRises": "Mėnulis po horizontu visą parą",
         "phase0": "Jaunatis", "phase1": "Augantis pjautuvas", "phase2": "Priešpilnis", "phase3": "Augantis Mėnulis",

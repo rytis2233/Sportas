@@ -42,7 +42,12 @@ final class AppModel: ObservableObject {
 
     @Published var lang: String { didSet { L.lang = lang; ud.set(lang, forKey: "lang") } }
     @Published var loc: Loc { didSet { locationChanged() } }
-    @Published var cal: Cal { didSet { if let d = try? JSONEncoder().encode(cal) { ud.set(d, forKey: "cal") } } }
+    @Published var cal: Cal {
+        didSet {
+            camera.detect = cal.auto
+            if let d = try? JSONEncoder().encode(cal) { ud.set(d, forKey: "cal") }
+        }
+    }
     @Published var solstice: Bool { didSet { ud.set(solstice, forKey: "solstice") } }
     /// Which body the overlay tracks.
     @Published var target: SkyBody { didSet { ud.set(target.rawValue, forKey: "target") } }
@@ -79,11 +84,15 @@ final class AppModel: ObservableObject {
         solstice = defaults.bool(forKey: "solstice")
         target = SkyBody(rawValue: defaults.string(forKey: "target") ?? "sun") ?? .sun
         motion.magneticDecl = Astro.magneticDeclination(loc.lat, loc.lon, Date())
+        camera.detect = cal.auto
         camera.onSun = { [weak self] p in self?.handleSun(p) }
         locSvc.onLocation = { [weak self] l in self?.gotLocation(l) }
         locSvc.onAuthorization = { [weak self] ok in
             guard let self = self else { return }
             self.startMotion()
+            if ok && self.motion.upgradeToTrueNorth() {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 3) { [weak self] in self?.motion.fallbackIfSilent() }
+            }
             if !ok && self.loc.src == "approx" { self.showToast(L.t("noLoc")) }
         }
     }
@@ -209,10 +218,10 @@ final class AppModel: ObservableObject {
         let sp = position(when, target)
         var r: String
         if target == .sun {
-            r = "☀ \(Int(sp.az.rounded()))° · " + String(format: "%.1f°", sp.alt)
+            r = "\(Int(sp.az.rounded()) % 360)° · " + String(format: "%.1f°", sp.alt)
         } else {
             let ph = Astro.moonPhase(when)
-            r = "☾ \(Int(sp.az.rounded()))° · " + String(format: "%.1f°", sp.alt) + " · \(Int((ph.illum * 100).rounded()))%"
+            r = "\(Int(sp.az.rounded()) % 360)° · " + String(format: "%.1f°", sp.alt) + " · \(Int((ph.illum * 100).rounded()))%"
         }
         if travel != nil { r = L.shortDate(when) + " " + L.time(when) + "  ·  " + r }
         var chip: String? = nil
@@ -285,7 +294,11 @@ final class AppModel: ObservableObject {
         alignPoint(pt, body)
         detCount = 0
         detAligned = true
-        if !detAnnounced { detAnnounced = true; showToast(L.t(sun.alt > 1 ? "autoAligned" : "autoAlignedMoon")) }
+        if !detAnnounced {
+            detAnnounced = true
+            UINotificationFeedbackGenerator().notificationOccurred(.success)
+            showToast(L.t(sun.alt > 1 ? "autoAligned" : "autoAlignedMoon"))
+        }
     }
 
     func setTarget(_ b: SkyBody) {
