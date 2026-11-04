@@ -1,0 +1,5 @@
+SunPath.xcodeproj/
+SunPath/Info.plist
+build/
+Payload/
+*.ipa

@@ -1,0 +1,42 @@
+name: SunPath
+options:
+  bundleIdPrefix: com.rytis
+  deploymentTarget:
+    iOS: "16.0"
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    MARKETING_VERSION: "1.0"
+    CURRENT_PROJECT_VERSION: "1"
+targets:
+  SunPath:
+    type: application
+    platform: iOS
+    sources: [SunPath]
+    info:
+      path: SunPath/Info.plist
+      properties:
+        CFBundleDisplayName: Sun Path
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
+        LSRequiresIPhoneOS: true
+        UILaunchScreen: {}
+        UIRequiresFullScreen: true
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
+        UIStatusBarStyle: UIStatusBarStyleLightContent
+        UIViewControllerBasedStatusBarAppearance: false
+        CFBundleLocalizations: [en, lt]
+        NSCameraUsageDescription: "The camera shows the sky so the sun's path can be drawn over it."
+        NSLocationWhenInUseUsageDescription: "Your location is needed to calculate where the sun is and to point the compass to true north."
+        NSPhotoLibraryAddUsageDescription: "Photos you take are saved to your photo library."
+        NSMotionUsageDescription: "Motion sensors tell the app which way the phone is pointing."
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.rytis.sunpath
+        PRODUCT_NAME: SunPath
+        TARGETED_DEVICE_FAMILY: "1"
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        GENERATE_INFOPLIST_FILE: NO
+        CODE_SIGNING_ALLOWED: NO
+        CODE_SIGNING_REQUIRED: NO
+        CODE_SIGN_IDENTITY: ""
