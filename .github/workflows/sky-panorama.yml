@@ -1,0 +1,31 @@
+# Fetches a CC0 360° panorama from Poly Haven for the Sun Path website preview.
+# Edit sun-path/sky-request.txt ("candidates" or "use <asset-id>") and push to run it.
+name: Sun Path preview sky
+
+on:
+  push:
+    paths:
+      - "sun-path/sky-request.txt"
+      - ".github/scripts/sky_panorama.py"
+      - ".github/workflows/sky-panorama.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sky:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch panorama
+        run: python3 .github/scripts/sky_panorama.py
+      - name: Commit result
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A sun-path
+          git diff --cached --quiet && { echo "nothing to commit"; exit 0; }
+          git commit -m "Sun Path preview sky: $(cat sun-path/sky-request.txt)"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
