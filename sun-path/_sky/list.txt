@@ -1,0 +1,10 @@
+lilienstein	medium contrast, natural light, nature, outdoor, partly cloudy, skies, sunrise-sunset
+meadow_2	clear, high contrast, morning-afternoon, natural light, nature, outdoor, partly cloudy
+kiara_1_dawn	medium contrast, natural light, nature, outdoor, partly cloudy, skies, sunrise-sunset
+golden_gate_hills	high contrast, midday, morning-afternoon, natural light, nature, outdoor, partly cloudy, skies
+kloppenheim_06	low contrast, natural light, nature, outdoor, partly cloudy, skies, sunrise-sunset
+rural_asphalt_road	high contrast, midday, natural light, nature, outdoor, partly cloudy, skies
+sunflowers	high contrast, midday, natural light, nature, outdoor, partly cloudy, skies
+limpopo_golf_course	high contrast, morning-afternoon, natural light, nature, outdoor, partly cloudy, skies
+symmetrical_garden_02	high contrast, midday, natural light, nature, outdoor, partly cloudy
+scythian_tombs_2	medium contrast, natural light, nature, outdoor, partly cloudy, skies, sunrise-sunset
