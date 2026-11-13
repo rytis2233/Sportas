@@ -546,6 +546,62 @@
     ctx.restore();
   }
 
+  // ---------------------------------------------------------------- 360° photo background (website preview)
+  // An equirectangular panorama drawn with WebGL: every screen pixel looks up the photo in the
+  // direction it faces, so the photo turns together with the overlay. It darkens with the Sun.
+  const pano = { ready: false };
+  function initPano(src) {
+    const c = document.createElement("canvas");
+    c.style.cssText = "position:fixed;inset:0;width:100%;height:100%;";
+    const gl = c.getContext("webgl", { antialias: false, alpha: false });
+    if (!gl) return;
+    const sh = (type, code) => { const o = gl.createShader(type); gl.shaderSource(o, code); gl.compileShader(o); return o; };
+    const prog = gl.createProgram();
+    gl.attachShader(prog, sh(gl.VERTEX_SHADER, "attribute vec2 p;void main(){gl_Position=vec4(p,0.0,1.0);}"));
+    gl.attachShader(prog, sh(gl.FRAGMENT_SHADER, `precision highp float;
+      uniform sampler2D tex; uniform mat3 cam; uniform vec2 res; uniform float f; uniform float bright;
+      void main() {
+        vec2 q = gl_FragCoord.xy - res * 0.5;
+        vec3 w = cam * normalize(vec3(q.x / f, q.y / f, -1.0));
+        float az = atan(w.x, w.y), alt = asin(clamp(w.z, -1.0, 1.0));
+        vec3 c = texture2D(tex, vec2(fract(az / 6.2831853), 0.5 - alt / 3.14159265)).rgb;
+        gl_FragColor = vec4(mix(vec3(0.02, 0.04, 0.09), c * bright, clamp(bright * 1.15, 0.0, 1.0)), 1.0);
+      }`));
+    gl.linkProgram(prog);
+    if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) return;
+    gl.useProgram(prog);
+    gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
+    const loc = gl.getAttribLocation(prog, "p");
+    gl.enableVertexAttribArray(loc);
+    gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+    Object.assign(pano, { gl, c, uCam: gl.getUniformLocation(prog, "cam"), uRes: gl.getUniformLocation(prog, "res"),
+      uF: gl.getUniformLocation(prog, "f"), uBright: gl.getUniformLocation(prog, "bright") });
+    const img = new Image();
+    img.onload = () => {
+      gl.bindTexture(gl.TEXTURE_2D, gl.createTexture());
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, img);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      document.body.insertBefore(c, cv);
+      pano.ready = true;
+    };
+    img.src = src;
+  }
+  function drawPano(sunAlt) {
+    const { gl, c } = pano, dpr = Math.min(DPR, 2);
+    const w = Math.round(W * dpr), h = Math.round(H * dpr);
+    if (c.width !== w || c.height !== h) { c.width = w; c.height = h; }
+    gl.viewport(0, 0, w, h);
+    gl.uniformMatrix3fv(pano.uCam, false, [CAM[0], CAM[3], CAM[6], CAM[1], CAM[4], CAM[7], CAM[2], CAM[5], CAM[8]]);
+    gl.uniform2f(pano.uRes, w, h);
+    gl.uniform1f(pano.uF, F * dpr);
+    gl.uniform1f(pano.uBright, sunAlt > 6 ? 1 : sunAlt > -12 ? 0.12 + 0.88 * (sunAlt + 12) / 18 : 0.12);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+  }
+
   // ---------------------------------------------------------------- render loop
   let lastHud = 0, seasonCache = null;
   function seasonPaths(year) {
@@ -576,7 +632,7 @@
     const o = obs();
     const moon = S.target === "moon";
 
-    if (video.hidden) drawGround(camAz, camAlt);
+    if (video.hidden && !pano.ready) drawGround(camAz, camAlt);
     // lines and labels share one soft shadow
     ctx.save();
     ctx.shadowColor = "rgba(0,0,0,0.45)"; ctx.shadowBlur = 5;
@@ -592,6 +648,7 @@
     ctx.restore();
 
     const sun = Astro.sunPosition(when, o);
+    if (pano.ready) drawPano(sun.alt);
     const bp = moon ? Astro.moonPosition(when, o) : sun;
     if (moon) drawMoon(bp, sun, when); else drawSun(sun, when.getTime());
     drawCrosshair(S.panel === "calibrate");
@@ -1126,6 +1183,7 @@
     O.manual = true;
     S.started = true;
     $("start").hidden = true;
+    initPano("sky.jpg");
     // look at the tracked body if it is up, otherwise towards the south
     const p = (S.target === "moon" ? Astro.moonPosition : Astro.sunPosition)(new Date(), obs());
     S.view.yaw = p.alt > -8 ? p.az : 180;
