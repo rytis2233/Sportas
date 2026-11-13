@@ -6,7 +6,11 @@ Controlled by sun-path/sky-request.txt:
   use <asset-id>  -> save that panorama as sun-path/sky.jpg (4096x2048) with
                      a credit file, and remove the previews
 """
-import json, os, shutil, subprocess, sys, urllib.request
+import io, json, os, shutil, sys, urllib.request
+
+from PIL import Image
+
+Image.MAX_IMAGE_PIXELS = None  # 8K panoramas
 
 API = "https://api.polyhaven.com"
 HEADERS = {"User-Agent": "sun-path-preview-builder"}
@@ -17,9 +21,9 @@ def get(url):
         return r.read()
 
 
-def magick(*args):
-    exe = shutil.which("magick") or shutil.which("convert")
-    subprocess.run([exe, *args], check=True)
+def save_resized(data, path, size, quality):
+    img = Image.open(io.BytesIO(data)).convert("RGB")
+    img.resize(size, Image.LANCZOS).save(path, "JPEG", quality=quality, optimize=True, progressive=True)
 
 
 def tonemapped_url(asset):
@@ -44,9 +48,7 @@ if request and request[0] == "candidates":
     lines = []
     for _, name in picks[:10]:
         try:
-            raw = f"/tmp/{name}.jpg"
-            open(raw, "wb").write(get(tonemapped_url(name)))
-            magick(raw, "-resize", "1024x512!", "-quality", "72", f"sun-path/_sky/{name}.jpg")
+            save_resized(get(tonemapped_url(name)), f"sun-path/_sky/{name}.jpg", (1024, 512), 72)
             lines.append(f"{name}\t{', '.join(sorted(assets[name].get('categories', [])))}")
             print("ok", name)
         except Exception as e:  # keep going with the others
@@ -54,9 +56,7 @@ if request and request[0] == "candidates":
     open("sun-path/_sky/list.txt", "w").write("\n".join(lines) + "\n")
 elif request and request[0] == "use" and len(request) > 1:
     name = request[1]
-    raw = f"/tmp/{name}.jpg"
-    open(raw, "wb").write(get(tonemapped_url(name)))
-    magick(raw, "-resize", "4096x2048!", "-strip", "-interlace", "JPEG", "-quality", "80", "sun-path/sky.jpg")
+    save_resized(get(tonemapped_url(name)), "sun-path/sky.jpg", (4096, 2048), 80)
     info = json.loads(get(f"{API}/info/{name}"))
     authors = ", ".join(info.get("authors", {}).keys()) or "Poly Haven"
     open("sun-path/sky-credit.txt", "w").write(

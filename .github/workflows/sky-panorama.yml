@@ -20,7 +20,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Fetch panorama
-        run: python3 .github/scripts/sky_panorama.py
+        run: |
+          python3 -m pip install --quiet pillow
+          python3 .github/scripts/sky_panorama.py
       - name: Commit result
         run: |
           git config user.name "github-actions[bot]"
