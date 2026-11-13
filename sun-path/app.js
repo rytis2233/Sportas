@@ -1108,9 +1108,41 @@
   document.addEventListener("keydown", e => { if (e.key === "Escape") { closeMenu(); closeSheet(); } });
   document.addEventListener("visibilitychange", () => { if (!document.hidden && video.srcObject) video.play().catch(() => {}); });
 
+  // ---------------------------------------------------------------- demo / website embed (?demo)
+  // ?demo shows a live preview without asking for camera, motion or location:
+  // the view looks at the Sun (or ?body=moon), drifts gently and can be dragged.
+  // Optional: &lang=lt|en, &lat=..&lon=.. (default Vilnius).
+  const params = new URLSearchParams(location.search);
+  const DEMO = params.has("demo");
+  if (params.get("lang") === "lt" || params.get("lang") === "en") S.lang = params.get("lang");
+  if (DEMO) {
+    const la = parseFloat(params.get("lat")), lo = parseFloat(params.get("lon"));
+    S.loc = isFinite(la) && isFinite(lo) && Math.abs(la) <= 90 && Math.abs(lo) <= 180
+      ? { lat: la, lon: lo, h: 0, src: "manual" } : { lat: 54.6872, lon: 25.2797, h: 0, src: "manual" };
+    if (params.get("body") === "moon") S.target = "moon";
+    $("bodySwitch").dataset.on = S.target;
+    O.decl = Astro.magneticDeclination(S.loc.lat, S.loc.lon, new Date());
+    pathCache.clear();
+    O.manual = true;
+    S.started = true;
+    $("start").hidden = true;
+    // look at the tracked body if it is up, otherwise towards the south
+    const p = (S.target === "moon" ? Astro.moonPosition : Astro.sunPosition)(new Date(), obs());
+    S.view.yaw = p.alt > -8 ? p.az : 180;
+    S.view.pitch = p.alt > -8 ? clamp(p.alt * 0.7 + 4, 2, 45) : 15;
+    let base = S.view.yaw, t0 = performance.now(), touched = -1e9;
+    cv.addEventListener("pointerdown", () => { touched = performance.now(); });
+    cv.addEventListener("pointermove", e => { if (e.buttons) touched = performance.now(); });
+    cv.addEventListener("pointerup", () => { base = S.view.yaw; t0 = performance.now(); });
+    (function drift(ts) {
+      requestAnimationFrame(drift);
+      if (ts - touched > 4000 && !S.panel) S.view.yaw = norm360(base + 16 * Math.sin((ts - t0) / 6000));
+    })(performance.now());
+  }
+
   applyI18n();
   requestAnimationFrame(frame);
-  if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js", { scope: "./" }).catch(() => {});
+  if (!DEMO && "serviceWorker" in navigator) navigator.serviceWorker.register("sw.js", { scope: "./" }).catch(() => {});
   // a newer version took over (service worker update): reload once if the user hasn't started yet
   // (only for an update — not when the service worker is installed for the first time)
   if ("serviceWorker" in navigator) {
