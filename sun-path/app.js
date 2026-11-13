@@ -592,7 +592,7 @@
   }
   // where the photo's own (cloud-hidden) sun is, as a fraction of its width; the photo is turned
   // so that this spot sits at the real Sun's azimuth
-  const PANO_SUN_U = 0.62;
+  const PANO_SUN_U = 0.60;
   function drawPano(sun) {
     const sunAlt = sun.alt;
     const { gl, c } = pano, dpr = Math.min(DPR, 2);

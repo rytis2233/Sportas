@@ -16,3 +16,9 @@ Everything is computed on the device (`astro.js`): Sun from truncated VSOP87, Mo
 Orientation uses the gyroscope for smooth tracking; the compass only keeps it aligned to true north and is ignored while its readings are unreliable or jumping (gyro-only mode).
 
 Needs HTTPS (camera and motion sensors). On iPhone open it in Safari, tap **Start** and allow motion and camera access; *Share → Add to Home Screen* installs it for offline use.
+
+## Website preview
+
+`?demo` shows a live preview for embedding (no camera, motion or location prompts): `<iframe src="https://rytis2233.github.io/Sportas/sun-path/?demo&lang=lt">`. Options: `&lang=lt|en`, `&body=moon`, `&lat=..&lon=..` (default Vilnius). The background is a 360° photo (`sky.jpg`) drawn with WebGL so it turns with the overlay; see `embed-example.html`.
+
+360° sky panorama: "Sunflowers" by Sergej Majboroda, [Poly Haven](https://polyhaven.com/a/sunflowers), CC0. It is fetched by `.github/workflows/sky-panorama.yml`.
