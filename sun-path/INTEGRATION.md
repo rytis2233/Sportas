@@ -9,7 +9,13 @@ Sun Path is a small web app with no dependencies: plain HTML, CSS and JavaScript
 
 For websites there is a **demo mode** (`?demo`):
 - It never asks for camera, motion or location permission and skips the start screen.
-- The background is a real 360° photo (`sky.jpg`, drawn with WebGL), which turns together with the overlay when the visitor drags.
+- The background is a real 360° photo of a landscape (`sky.jpg`, drawn with WebGL), which turns together with the overlay when the visitor drags.
+- The sky above it is drawn from the real Sun and Moon positions, so the drawn Sun always sits in its own glow:
+  - blue sky by day;
+  - sunset colours when the Sun is low;
+  - stars and moonlight at night.
+- **Sun** shows daytime. If the Sun is down when the page opens, the preview jumps to the next good daytime moment.
+- **Moon** jumps to the nearest night with the Moon high in the sky. Time then keeps running in real time, so the Moon moves along its path.
 - The view drifts gently when nobody touches it. Visitors can drag to look around, switch Sun/Moon, open time travel, etc.
 
 Live demo: <https://rytis2233.github.io/Sportas/sun-path/?demo&lang=lt>
@@ -67,8 +73,8 @@ Then embed `<that-folder>/?demo&lang=lt` with the iframe above, or link to it.
 - **Default location in demo mode.** In `app.js`, search for `lat: 54.6872`. Or simply pass `&lat=..&lon=..` in the URL.
 - **Background photo.**
   - Replace `sky.jpg` with any **equirectangular 360° photo** (2:1, e.g. 4096 × 2048 JPEG, about 1–2 MB).
-  - In `app.js`, set `PANO_SUN_U` to the horizontal position (0…1 of the width) of the photo's own sun or brightest sky. The photo is turned so that spot faces the real Sun.
-  - Pick a photo where the sun itself is hidden by clouds, so the drawn Sun is not doubled.
+  - Only the landscape of the photo is used. Its own sky (bright pixels above the horizon) is replaced by the computed sky, so the photo's sun position does not matter.
+  - The horizon should be level, in the middle row of the image.
   - `.github/workflows/sky-panorama.yml` can fetch CC0 panoramas from Poly Haven.
 - **Don't change:**
   - The astronomy in `astro.js`. It is validated against reference data (Meeus' examples, equinox times, NASA eclipse contacts).

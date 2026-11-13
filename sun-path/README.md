@@ -19,6 +19,6 @@ Needs HTTPS (camera and motion sensors). On iPhone open it in Safari, tap **Star
 
 ## Website preview
 
-`?demo` shows a live preview for embedding (no camera, motion or location prompts): `<iframe src="https://rytis2233.github.io/Sportas/sun-path/?demo&lang=lt">`. Options: `&lang=lt|en`, `&body=moon`, `&lat=..&lon=..` (default Vilnius). The background is a 360° photo (`sky.jpg`) drawn with WebGL so it turns with the overlay; see `embed-example.html`.
+`?demo` shows a live preview for embedding (no camera, motion or location prompts): `<iframe src="https://rytis2233.github.io/Sportas/sun-path/?demo&lang=lt">`. Options: `&lang=lt|en`, `&body=moon`, `&lat=..&lon=..` (default Vilnius). The background is a 360° landscape photo (`sky.jpg`) drawn with WebGL so it turns with the overlay; the sky is computed from the real Sun and Moon (sunset colours, stars and moonlight at night). Sun shows daytime, Moon jumps to the nearest night with the Moon up. See `embed-example.html`.
 
 360° sky panorama: "Sunflowers" by Sergej Majboroda, [Poly Haven](https://polyhaven.com/a/sunflowers), CC0. It is fetched by `.github/workflows/sky-panorama.yml`.

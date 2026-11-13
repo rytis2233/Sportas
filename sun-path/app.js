@@ -558,14 +558,39 @@
     const sh = (type, code) => { const o = gl.createShader(type); gl.shaderSource(o, code); gl.compileShader(o); return o; };
     const prog = gl.createProgram();
     gl.attachShader(prog, sh(gl.VERTEX_SHADER, "attribute vec2 p;void main(){gl_Position=vec4(p,0.0,1.0);}"));
+    // Sky is drawn from the real Sun and Moon (day gradient, sun glow, sunset colours, night with
+    // stars and moonlight); only the photo's landscape is kept — its own sky is replaced.
     gl.attachShader(prog, sh(gl.FRAGMENT_SHADER, `precision highp float;
-      uniform sampler2D tex; uniform mat3 cam; uniform vec2 res; uniform float f; uniform float bright; uniform float turn;
+      uniform sampler2D tex; uniform mat3 cam; uniform vec2 res; uniform float f;
+      uniform vec3 sunDir; uniform vec3 moonDir; uniform float moonLit;
+      float hash(vec3 p) { return fract(sin(dot(p, vec3(12.9898, 78.233, 45.164))) * 43758.5453); }
       void main() {
         vec2 q = gl_FragCoord.xy - res * 0.5;
-        vec3 w = cam * normalize(vec3(q.x / f, q.y / f, -1.0));
-        float az = atan(w.x, w.y), alt = asin(clamp(w.z, -1.0, 1.0));
-        vec3 c = texture2D(tex, vec2(fract(az / 6.2831853 + turn), 0.5 - alt / 3.14159265)).rgb;
-        gl_FragColor = vec4(mix(vec3(0.02, 0.04, 0.09), c * bright, clamp(bright * 1.15, 0.0, 1.0)), 1.0);
+        vec3 w = normalize(cam * normalize(vec3(q.x / f, q.y / f, -1.0)));
+        float az = atan(w.x, w.y), alt = asin(clamp(w.z, -1.0, 1.0)), altDeg = degrees(alt);
+        vec3 photo = texture2D(tex, vec2(fract(az / 6.2831853), 0.5 - alt / 3.14159265)).rgb;
+        float sh = sunDir.z;
+        float day = smoothstep(-0.12, 0.06, sh);
+        float twi = smoothstep(-0.31, -0.10, sh) * (1.0 - smoothstep(0.05, 0.35, sh));
+        float up = max(w.z, 0.0), hz = pow(1.0 - up, 3.0);
+        vec3 sky = mix(mix(vec3(0.004, 0.008, 0.025), vec3(0.015, 0.03, 0.07), hz),
+                       mix(vec3(0.14, 0.34, 0.74), vec3(0.66, 0.80, 0.95), hz), day);
+        float cs = max(dot(w, sunDir), 0.0);
+        sky += vec3(1.0, 0.42, 0.12) * twi * hz * (0.25 + 0.75 * pow(cs, 3.0)) * 0.9;
+        sky += vec3(1.0, 0.92, 0.75) * (pow(cs, 600.0) * 1.2 + pow(cs, 40.0) * 0.35 + pow(cs, 6.0) * 0.12) * smoothstep(-0.08, 0.02, sh);
+        float night = 1.0 - day;
+        float cm = max(dot(w, moonDir), 0.0);
+        sky += vec3(0.55, 0.65, 0.85) * (pow(cm, 300.0) * 0.5 + pow(cm, 20.0) * 0.07) * moonLit * smoothstep(-0.02, 0.03, moonDir.z) * night;
+        // stars: round points at random cell centres, only once it is dark
+        vec3 cell = floor(w * 260.0);
+        float st = hash(cell), dist = length(w - normalize((cell + 0.5) / 260.0)) * 260.0;
+        float starVis = 1.0 - smoothstep(-0.21, -0.07, sh);
+        sky += vec3(0.9, 0.95, 1.0) * step(0.9975, st) * (0.4 + 0.6 * (st - 0.9975) / 0.0025)
+               * (1.0 - smoothstep(0.08, 0.32, dist)) * starVis * smoothstep(0.02, 0.15, up);
+        float lum = dot(photo, vec3(0.299, 0.587, 0.114));
+        float skyMask = max(smoothstep(0.2, 2.5, altDeg) * smoothstep(0.32, 0.55, lum), smoothstep(6.0, 12.0, altDeg));
+        vec3 land = photo * mix(0.05, 1.0, smoothstep(-0.2, 0.15, sh)) + vec3(1.0, 0.45, 0.15) * twi * 0.05;
+        gl_FragColor = vec4(mix(land, sky, skyMask), 1.0);
       }`));
     gl.linkProgram(prog);
     if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) return;
@@ -576,7 +601,8 @@
     gl.enableVertexAttribArray(loc);
     gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
     Object.assign(pano, { gl, c, uCam: gl.getUniformLocation(prog, "cam"), uRes: gl.getUniformLocation(prog, "res"),
-      uF: gl.getUniformLocation(prog, "f"), uBright: gl.getUniformLocation(prog, "bright"), uTurn: gl.getUniformLocation(prog, "turn") });
+      uF: gl.getUniformLocation(prog, "f"), uSun: gl.getUniformLocation(prog, "sunDir"),
+      uMoon: gl.getUniformLocation(prog, "moonDir"), uMoonLit: gl.getUniformLocation(prog, "moonLit") });
     const img = new Image();
     img.onload = () => {
       gl.bindTexture(gl.TEXTURE_2D, gl.createTexture());
@@ -590,11 +616,7 @@
     };
     img.src = src;
   }
-  // where the photo's own (cloud-hidden) sun is, as a fraction of its width; the photo is turned
-  // so that this spot sits at the real Sun's azimuth
-  const PANO_SUN_U = 0.60;
-  function drawPano(sun) {
-    const sunAlt = sun.alt;
+  function drawPano(sun, when) {
     const { gl, c } = pano, dpr = Math.min(DPR, 2);
     const w = Math.round(W * dpr), h = Math.round(H * dpr);
     if (c.width !== w || c.height !== h) { c.width = w; c.height = h; }
@@ -602,8 +624,10 @@
     gl.uniformMatrix3fv(pano.uCam, false, [CAM[0], CAM[3], CAM[6], CAM[1], CAM[4], CAM[7], CAM[2], CAM[5], CAM[8]]);
     gl.uniform2f(pano.uRes, w, h);
     gl.uniform1f(pano.uF, F * dpr);
-    gl.uniform1f(pano.uTurn, PANO_SUN_U - sun.az / 360);
-    gl.uniform1f(pano.uBright, sunAlt > 6 ? 1 : sunAlt > -12 ? 0.12 + 0.88 * (sunAlt + 12) / 18 : 0.12);
+    const mo = Astro.moonPosition(when, obs());
+    gl.uniform3fv(pano.uSun, worldVec(sun.az, sun.alt));
+    gl.uniform3fv(pano.uMoon, worldVec(mo.az, mo.alt));
+    gl.uniform1f(pano.uMoonLit, Astro.moonPhase(when).illum);
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
   }
 
@@ -653,7 +677,7 @@
     ctx.restore();
 
     const sun = Astro.sunPosition(when, o);
-    if (pano.ready) drawPano(sun);
+    if (pano.ready) drawPano(sun, when);
     const bp = moon ? Astro.moonPosition(when, o) : sun;
     if (moon) drawMoon(bp, sun, when); else drawSun(sun, when.getTime());
     drawCrosshair(S.panel === "calibrate");
@@ -672,7 +696,8 @@
     $("readout").dataset.body = S.target;
     const chip = $("modeChip"), cs = compassState();
     let msg = null, cls = "chip warn";
-    if (S.travel && S.panel !== "travel") msg = "⏱ " + t("timeTravel");
+    if (DEMO && !S.panel) msg = t("manual");
+    else if (S.travel && S.panel !== "travel") msg = "⏱ " + t("timeTravel");
     else if (S.panel === "calibrate") msg = t("calibrating");
     else if (S.loc.src === "approx") { msg = t("waitLoc"); cls = "chip alert"; }
     else if (cs === "gyro") { msg = t("gyroOnly"); cls = "chip alert"; }
@@ -723,6 +748,7 @@
     if (S.target === b) return;
     S.target = b; store.set("target", b);
     $("bodySwitch").dataset.on = b;
+    if (DEMO) { demoShow(b); if (S.panel === "travel") syncTravel(); }
     if (b === "moon") {
       const ph = Astro.moonPhase(now());
       toast(t("moon") + " · " + t("phase" + ph.index) + " · " + Math.round(ph.illum * 100) + "%");
@@ -1176,6 +1202,30 @@
   // Optional: &lang=lt|en, &lat=..&lon=.. (default Vilnius).
   const params = new URLSearchParams(location.search);
   const DEMO = params.has("demo");
+  const demo = { base: 0, t0: 0, touched: -1e9 };
+  // A time when the body is well placed: the Sun by day, the Moon at night (null = now is fine).
+  function demoTime(body) {
+    const o = obs(), pos = body === "moon" ? Astro.moonPosition : Astro.sunPosition;
+    // strict = a good moment to jump to; otherwise just "visible now" (keep the real time)
+    const good = (tm, strict) => {
+      const d = new Date(tm), b = pos(d, o).alt;
+      return body === "moon" ? b > (strict ? 15 : 3) && Astro.sunPosition(d, o).alt < (strict ? -12 : -6) : b > (strict ? 12 : 0);
+    };
+    const now0 = Date.now();
+    if (good(now0, false)) return null;
+    for (let tm = now0; tm < now0 + 30 * 86400000; tm += 15 * 60000) {
+      if (good(tm, true)) return good(tm + 3600000, true) ? tm + 3600000 : tm;
+    }
+    return null;
+  }
+  // Show the body: jump to day/night if needed and turn the view towards it.
+  function demoShow(body) {
+    S.travel = demoTime(body);
+    const p = (body === "moon" ? Astro.moonPosition : Astro.sunPosition)(now(), obs());
+    S.view.yaw = p.alt > -8 ? p.az : 180;
+    S.view.pitch = p.alt > -8 ? clamp(p.alt * 0.7 + 4, 2, 45) : 15;
+    demo.base = S.view.yaw; demo.t0 = performance.now(); demo.touched = -1e9;
+  }
   if (params.get("lang") === "lt" || params.get("lang") === "en") S.lang = params.get("lang");
   if (DEMO) {
     const la = parseFloat(params.get("lat")), lo = parseFloat(params.get("lon"));
@@ -1189,18 +1239,18 @@
     S.started = true;
     $("start").hidden = true;
     initPano("sky.jpg");
-    // look at the tracked body if it is up, otherwise towards the south
-    const p = (S.target === "moon" ? Astro.moonPosition : Astro.sunPosition)(new Date(), obs());
-    S.view.yaw = p.alt > -8 ? p.az : 180;
-    S.view.pitch = p.alt > -8 ? clamp(p.alt * 0.7 + 4, 2, 45) : 15;
-    let base = S.view.yaw, t0 = performance.now(), touched = -1e9;
-    cv.addEventListener("pointerdown", () => { touched = performance.now(); });
-    cv.addEventListener("pointermove", e => { if (e.buttons) touched = performance.now(); });
-    cv.addEventListener("pointerup", () => { base = S.view.yaw; t0 = performance.now(); });
+    cv.addEventListener("pointerdown", () => { demo.touched = performance.now(); });
+    cv.addEventListener("pointermove", e => { if (e.buttons) demo.touched = performance.now(); });
+    cv.addEventListener("pointerup", () => { demo.base = S.view.yaw; demo.t0 = performance.now(); });
+    let lastTs = performance.now();
     (function drift(ts) {
       requestAnimationFrame(drift);
-      if (ts - touched > 4000 && !S.panel) S.view.yaw = norm360(base + 16 * Math.sin((ts - t0) / 6000));
+      // a jumped-to day or night keeps running in real time, so the Sun / Moon moves as in the sky
+      if (S.travel && !S.playing && S.panel !== "travel") S.travel += ts - lastTs;
+      lastTs = ts;
+      if (ts - demo.touched > 4000 && !S.panel) S.view.yaw = norm360(demo.base + 16 * Math.sin((ts - demo.t0) / 6000));
     })(performance.now());
+    demoShow(S.target);
   }
 
   applyI18n();
