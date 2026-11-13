@@ -559,12 +559,12 @@
     const prog = gl.createProgram();
     gl.attachShader(prog, sh(gl.VERTEX_SHADER, "attribute vec2 p;void main(){gl_Position=vec4(p,0.0,1.0);}"));
     gl.attachShader(prog, sh(gl.FRAGMENT_SHADER, `precision highp float;
-      uniform sampler2D tex; uniform mat3 cam; uniform vec2 res; uniform float f; uniform float bright;
+      uniform sampler2D tex; uniform mat3 cam; uniform vec2 res; uniform float f; uniform float bright; uniform float turn;
       void main() {
         vec2 q = gl_FragCoord.xy - res * 0.5;
         vec3 w = cam * normalize(vec3(q.x / f, q.y / f, -1.0));
         float az = atan(w.x, w.y), alt = asin(clamp(w.z, -1.0, 1.0));
-        vec3 c = texture2D(tex, vec2(fract(az / 6.2831853), 0.5 - alt / 3.14159265)).rgb;
+        vec3 c = texture2D(tex, vec2(fract(az / 6.2831853 + turn), 0.5 - alt / 3.14159265)).rgb;
         gl_FragColor = vec4(mix(vec3(0.02, 0.04, 0.09), c * bright, clamp(bright * 1.15, 0.0, 1.0)), 1.0);
       }`));
     gl.linkProgram(prog);
@@ -576,7 +576,7 @@
     gl.enableVertexAttribArray(loc);
     gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
     Object.assign(pano, { gl, c, uCam: gl.getUniformLocation(prog, "cam"), uRes: gl.getUniformLocation(prog, "res"),
-      uF: gl.getUniformLocation(prog, "f"), uBright: gl.getUniformLocation(prog, "bright") });
+      uF: gl.getUniformLocation(prog, "f"), uBright: gl.getUniformLocation(prog, "bright"), uTurn: gl.getUniformLocation(prog, "turn") });
     const img = new Image();
     img.onload = () => {
       gl.bindTexture(gl.TEXTURE_2D, gl.createTexture());
@@ -590,7 +590,11 @@
     };
     img.src = src;
   }
-  function drawPano(sunAlt) {
+  // where the photo's own (cloud-hidden) sun is, as a fraction of its width; the photo is turned
+  // so that this spot sits at the real Sun's azimuth
+  const PANO_SUN_U = 0.62;
+  function drawPano(sun) {
+    const sunAlt = sun.alt;
     const { gl, c } = pano, dpr = Math.min(DPR, 2);
     const w = Math.round(W * dpr), h = Math.round(H * dpr);
     if (c.width !== w || c.height !== h) { c.width = w; c.height = h; }
@@ -598,6 +602,7 @@
     gl.uniformMatrix3fv(pano.uCam, false, [CAM[0], CAM[3], CAM[6], CAM[1], CAM[4], CAM[7], CAM[2], CAM[5], CAM[8]]);
     gl.uniform2f(pano.uRes, w, h);
     gl.uniform1f(pano.uF, F * dpr);
+    gl.uniform1f(pano.uTurn, PANO_SUN_U - sun.az / 360);
     gl.uniform1f(pano.uBright, sunAlt > 6 ? 1 : sunAlt > -12 ? 0.12 + 0.88 * (sunAlt + 12) / 18 : 0.12);
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
   }
@@ -648,7 +653,7 @@
     ctx.restore();
 
     const sun = Astro.sunPosition(when, o);
-    if (pano.ready) drawPano(sun.alt);
+    if (pano.ready) drawPano(sun);
     const bp = moon ? Astro.moonPosition(when, o) : sun;
     if (moon) drawMoon(bp, sun, when); else drawSun(sun, when.getTime());
     drawCrosshair(S.panel === "calibrate");
