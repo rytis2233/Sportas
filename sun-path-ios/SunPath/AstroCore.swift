@@ -144,10 +144,13 @@ enum Astro {
     }
 
     /// Degrees to add to a geometric altitude (standard atmosphere).
+    /// Below the horizon the lift fades out smoothly instead of jumping to zero, so paths stay smooth.
     static func refraction(_ h: Double) -> Double {
-        if h < -1.5 { return 0 }
-        let hh = max(h, -1.0)
-        return 1.02 / tand(hh + 10.3 / (hh + 5.11)) / 60
+        func r(_ x: Double) -> Double { 1.02 / tand(x + 10.3 / (x + 5.11)) / 60 }
+        if h >= -1 { return r(h) }
+        if h <= -5 { return 0 }
+        let k = (h + 5) / 4
+        return r(-1) * k * k * (3 - 2 * k)
     }
 
     static func context(_ t: Double, _ obs: Observer, _ withMoon: Bool) -> Ctx {

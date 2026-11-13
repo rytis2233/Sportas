@@ -182,10 +182,14 @@
     return [EARTH_R * rc * cosd(lst), EARTH_R * rc * sind(lst), EARTH_R * rs];
   }
 
-  function refraction(h) { // degrees to add to geometric altitude (standard atmosphere)
-    if (h < -1.5) return 0;
-    const hh = Math.max(h, -1.0);
-    return 1.02 / tand(hh + 10.3 / (hh + 5.11)) / 60;
+  // degrees to add to geometric altitude (standard atmosphere, Saemundsson). Below the horizon the
+  // lift fades out smoothly instead of jumping to zero, so drawn paths stay smooth there.
+  function refraction(h) {
+    const R = x => 1.02 / tand(x + 10.3 / (x + 5.11)) / 60;
+    if (h >= -1) return R(h);
+    if (h <= -5) return 0;
+    const k = (h + 5) / 4;
+    return R(-1) * k * k * (3 - 2 * k);
   }
 
   // Everything needed at one instant: topocentric vectors for Sun (and optionally Moon).
